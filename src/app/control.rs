@@ -6,17 +6,14 @@ use crossterm::{
     terminal,
 };
 use std::{
-    io::{Stdout, Write},
+    io::Write,
     time::Duration, 
-    cmp,
+    cmp, fs,
 };
 
 use super::display::Display;
 
 pub fn event_loop(display: &mut Display) -> Result<()> {
-    let stdout = &mut display.stdout;
-    let lines = &mut display.lines;
-
     loop {
         // listen for key
         if poll(Duration::from_millis(1000))? {
@@ -27,7 +24,7 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
                     (key_event.modifiers == KeyModifiers::CONTROL && key_event.code == KeyCode::Char('x')) { 
                         break 
                     }
-                    else { handle_key_event(stdout, lines, key_event)?; }
+                    else { handle_key_event(display, key_event)?; }
                 },
                 _ => (),
             }
@@ -37,22 +34,26 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
     Ok(())
 }
 
-fn handle_key_event(stdout: &mut Stdout, lines: &mut Vec<String>, event: KeyEvent) -> Result<()> {
+fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
+    let stdout = &mut display.stdout;
+
     match event {
         // standard controls (no modifiers applied)
         KeyEvent { modifiers: KeyModifiers::NONE, code } => {
             match code {
-                KeyCode::Left => { move_cursor(stdout, lines, 0, -1) },
-                KeyCode::Right => { move_cursor(stdout, lines, 0, 1) },
-                KeyCode::Up => { move_cursor(stdout, lines, -1, 0) },
-                KeyCode::Down => { move_cursor(stdout, lines, 1, 0) },
+                KeyCode::Left => { move_cursor(display, 0, -1) },
+                KeyCode::Right => { move_cursor(display, 0, 1) },
+                KeyCode::Up => { move_cursor(display, -1, 0) },
+                KeyCode::Down => { move_cursor(display, 1, 0) },
                 KeyCode::Backspace => { 
-                    delete(stdout, 1, lines)?;
-                    Display::refresh(stdout, lines)
+                    // Backspace
+                    delete(display, 1)?;
+                    display.refresh()
                 }
                 KeyCode::Char(c) => {
-                    insert(stdout, c, lines)?;
-                    Display::refresh(stdout, lines)
+                    // type characters
+                    insert(display, c)?;
+                    display.refresh()
                 }
                 _ => return Ok(()),
             }
@@ -62,15 +63,25 @@ fn handle_key_event(stdout: &mut Stdout, lines: &mut Vec<String>, event: KeyEven
         KeyEvent { modifiers: KeyModifiers::CONTROL, code } => {
             let width = terminal::size()?.0 as i32;
             match code {
-                KeyCode::Char('b') => { move_cursor(stdout, lines, 0, -1) },
-                KeyCode::Char('f') => { move_cursor(stdout, lines, 0, 1) },
-                KeyCode::Char('p') => { move_cursor(stdout, lines, -1, 0) },
-                KeyCode::Char('n') => { move_cursor(stdout, lines, 1, 0) },
+                KeyCode::Char('b') => { move_cursor(display, 0, -1) },
+                KeyCode::Char('f') => { move_cursor(display, 0, 1) },
+                KeyCode::Char('p') => { move_cursor(display, -1, 0) },
+                KeyCode::Char('n') => { move_cursor(display, 1, 0) },
                 KeyCode::Char('a') => { execute!(stdout, cursor::MoveToColumn(0)) },
-                KeyCode::Char('e') => { move_cursor(stdout, lines, 0, width)},
+                KeyCode::Char('e') => { move_cursor(display, 0, width)},
                 KeyCode::Char('d') => { 
-                    delete(stdout, 0, lines)?;
-                    Display::refresh(stdout, lines)
+                    // Delete
+                    delete(display, 0)?;
+                    display.refresh()
+                }
+                KeyCode::Char('k') => { 
+                    // Kill to end of line
+                    kill(display)?;
+                    display.refresh()
+                }
+                KeyCode::Char('s') => {
+                    // Save edits to file 
+                    save(display)
                 }
                 _ => return Ok(()),
             }
@@ -83,7 +94,10 @@ fn handle_key_event(stdout: &mut Stdout, lines: &mut Vec<String>, event: KeyEven
 
 /// Move cursor in the y rows and x columns if possible.
 /// Will not move if outside the bounds of the text.
-fn move_cursor(stdout: &mut Stdout, lines: &Vec<String>,  y: i32, x: i32) -> Result<()> {
+fn move_cursor(display: &mut Display,  y: i32, x: i32) -> Result<()> {
+    let lines = &mut display.lines;
+    let stdout = &mut display.stdout;
+
     let (cur_col, cur_row) = cursor::position().unwrap();
     let (mut new_col, new_row) = (((cur_col as i32) + x) as u16, ((cur_row as i32) + y) as u16);
 
@@ -104,7 +118,9 @@ fn move_cursor(stdout: &mut Stdout, lines: &Vec<String>,  y: i32, x: i32) -> Res
 }
 
 /// Delete character at left directed offset from cursor on current row if possible
-fn delete(stdout: &mut Stdout, offset: i32, lines: &mut Vec<String>) -> Result<()> {
+fn delete(display: &mut Display, offset: i32) -> Result<()> {
+    let lines = &mut display.lines;
+
     let (cur_col, cur_row) = cursor::position()?;
     let cur_line = &mut lines[cur_row as usize];
     
@@ -112,21 +128,51 @@ fn delete(stdout: &mut Stdout, offset: i32, lines: &mut Vec<String>) -> Result<(
     if pos < cur_line.len() {
         cur_line.remove(pos);
         if offset > 0 {
-            move_cursor(stdout, lines, 0, -(offset as i32))?;
+            move_cursor(display, 0, -(offset as i32))?;
         }
     }
 
     Ok(())
 }
 
-fn insert(stdout: &mut Stdout, c: char, lines: &mut Vec<String>) -> Result<()> {
+/// Delete character starting at cursor until end of line
+fn kill(display: &mut Display) -> Result<()> {
+    let lines = &mut display.lines;
+
+    let (cur_col, cur_row) = cursor::position()?;
+    let cur_line = &mut lines[cur_row as usize];
+    
+    let pos = cur_col as usize;
+        if pos < cur_line.len() {
+        cur_line.replace_range(pos.., "");
+    }
+
+    Ok(())
+}
+
+fn insert(display: &mut Display, c: char) -> Result<()> {
+    let lines = &mut display.lines;
+    
     let (cur_col, cur_row) = cursor::position()?;
     let cur_line = &mut lines[cur_row as usize];
     
     let pos = cur_col as usize;
     if pos < cur_line.len() { cur_line.insert(pos, c); }
     else { cur_line.push(c); }
-    move_cursor(stdout, lines, 0, 1)?;
+    move_cursor(display, 0, 1)?;
+
+    Ok(())
+}
+
+fn save(display: &mut Display) -> Result<()> {
+    let lines = &mut display.lines;
+    let file_name = &mut display.file_name;
+    let mut content = String::new();
+    for line in lines {
+        content.push_str(&format!("{}\n", line)[..]);
+    }
+
+    fs::write(file_name, content)?;
 
     Ok(())
 }

@@ -16,15 +16,16 @@ use crossterm::{
     Result,
 };
 
-use super::{vector, control};
+use super::{vector, control, config::Config};
 
 pub struct Display  {
     pub stdout: Stdout,
     pub lines: Vec<String>,
+    pub file_name: String,
 }
 
 impl Display {
-    pub fn new(mut stdout: Stdout, content: &String) -> Display {
+    pub fn new(mut stdout: Stdout, content: &String, config: &Config) -> Display {
         let lines = content.lines().collect();
         let lines = vector::from(lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {
@@ -32,7 +33,7 @@ impl Display {
             process::exit(1);
         }
 
-        Display { stdout, lines }
+        Display { stdout, lines, file_name: config.file_name.clone()}
     }
     
     fn init(stdout: &mut Stdout, lines: &Vec<String>) -> Result<()> {
@@ -62,7 +63,10 @@ impl Display {
         Ok(())
     }
 
-    pub fn refresh(mut stdout: &Stdout, lines: &Vec<String>) -> Result<()> {
+    pub fn refresh(&mut self) -> Result<()> {
+        let lines = &mut self.lines;
+        let stdout = &mut self.stdout;
+
         execute!(
             stdout, 
             cursor::SavePosition,

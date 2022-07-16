@@ -1,6 +1,8 @@
-1. kill line
-2. saving file
+1. confirmation messages
 3. enter to add line, delete on new line to remove line
 4. page down/up
 5. search 
 6. Look into gap buffer for efficient editing.
+7. controls help message
+8. yank
+9. undo/redo
