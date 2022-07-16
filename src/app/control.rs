@@ -15,7 +15,7 @@ use super::display::{Display, self};
 
 pub fn event_loop(display: &mut Display) -> Result<()> {
     let stdout = &display.stdout;
-    let lines = &display.lines;
+    let lines = &mut display.lines;
 
     loop {
         // listen for key
@@ -37,7 +37,7 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
     Ok(())
 }
 
-fn handle_key_event(mut stdout: &Stdout, lines: &Vec<String>, event: KeyEvent) -> Result<()> {
+fn handle_key_event(mut stdout: &Stdout, lines: &mut Vec<String>, event: KeyEvent) -> Result<()> {
     match event {
         // standard controls (no modifiers applied)
         KeyEvent { modifiers: KeyModifiers::NONE, code } => {
@@ -46,11 +46,13 @@ fn handle_key_event(mut stdout: &Stdout, lines: &Vec<String>, event: KeyEvent) -
                 KeyCode::Right => { move_cursor(stdout, lines, 0, 1) },
                 KeyCode::Up => { move_cursor(stdout, lines, -1, 0) },
                 KeyCode::Down => { move_cursor(stdout, lines, 1, 0) },
-                KeyCode::Backspace => {
-                    let (cur_col, cur_row) = cursor::position()?;
-
-
-                    Ok(())
+                KeyCode::Backspace => { 
+                    delete(stdout, 1, lines)?;
+                    Display::refresh(stdout, lines)
+                }
+                KeyCode::Char(c) => {
+                    insert(stdout, c, lines)?;
+                    Display::refresh(stdout, lines)
                 }
                 _ => return Ok(()),
             }
@@ -65,7 +67,11 @@ fn handle_key_event(mut stdout: &Stdout, lines: &Vec<String>, event: KeyEvent) -
                 KeyCode::Char('p') => { move_cursor(stdout, lines, -1, 0) },
                 KeyCode::Char('n') => { move_cursor(stdout, lines, 1, 0) },
                 KeyCode::Char('a') => { execute!(stdout, cursor::MoveToColumn(0)) },
-                KeyCode::Char('e') => { move_cursor(stdout, lines, 0, width)}
+                KeyCode::Char('e') => { move_cursor(stdout, lines, 0, width)},
+                KeyCode::Char('d') => { 
+                    delete(stdout, 0, lines)?;
+                    Display::refresh(stdout, lines)
+                }
                 _ => return Ok(()),
             }
         },
@@ -93,6 +99,34 @@ fn move_cursor(mut stdout: &Stdout, lines: &Vec<String>,  y: i32, x: i32) -> Res
         queue!(stdout, cursor::MoveTo(new_col, new_row))?;
         stdout.flush()?;
     }
+
+    Ok(())
+}
+
+/// Delete character at left directed offset from cursor on current row if possible
+fn delete(mut stdout: &Stdout, offset: i32, lines: &mut Vec<String>) -> Result<()> {
+    let (cur_col, cur_row) = cursor::position()?;
+    let cur_line = &mut lines[cur_row as usize];
+    
+    let pos = (cur_col as i32 - offset) as usize;
+    if pos < cur_line.len() {
+        cur_line.remove(pos);
+        if offset > 0 {
+            move_cursor(stdout, lines, 0, -(offset as i32))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn insert(mut stdout: &Stdout, c: char, lines: &mut Vec<String>) -> Result<()> {
+    let (cur_col, cur_row) = cursor::position()?;
+    let cur_line = &mut lines[cur_row as usize];
+    
+    let pos = cur_col as usize;
+    if pos < cur_line.len() { cur_line.insert(pos, c); }
+    else { cur_line.push(c); }
+    move_cursor(stdout, lines, 0, 1)?;
 
     Ok(())
 }

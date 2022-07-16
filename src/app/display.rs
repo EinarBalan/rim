@@ -9,7 +9,7 @@ use crossterm::{
         EnterAlternateScreen, LeaveAlternateScreen,
         enable_raw_mode, disable_raw_mode,
         DisableLineWrap,
-        Clear, ClearType, self,
+        Clear, ClearType, 
     },
     cursor,
     style::*,
@@ -58,6 +58,33 @@ impl Display {
 
     pub fn event_loop(&mut self) -> Result<()> {
         control::event_loop(self)?;
+
+        Ok(())
+    }
+
+    pub fn refresh(mut stdout: &Stdout, lines: &Vec<String>) -> Result<()> {
+        execute!(
+            stdout, 
+            cursor::SavePosition,
+            cursor::MoveTo(0, 0),
+            Clear(ClearType::All),
+        )?;
+
+        for line in lines {
+            queue!(
+                stdout,
+                Print(&line),
+                cursor::MoveToNextLine(1),
+            )?;
+        }
+        stdout.flush()?;
+
+        execute!(stdout, cursor::RestorePosition)?;
+
+        Ok(())
+    }
+
+    pub fn refresh_line (mut stdout: &Stdout, lines: &Vec<String>) -> Result<()> {
 
         Ok(())
     }
