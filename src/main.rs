@@ -1,3 +1,4 @@
+#![feature(linked_list_cursors)]
 mod app;
 
 use std::{env, process};

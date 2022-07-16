@@ -1,6 +1,6 @@
 use std::{
     io::{Stdout, Write}, 
-    collections::LinkedList, 
+    collections::{LinkedList, linked_list::CursorMut}, 
     process
 };
 
@@ -16,22 +16,24 @@ use super::{list, control};
 
 pub struct Display {
     pub stdout: Stdout,
-    pub lines: Vec<LinkedList<char>>
+    pub lines: LinkedList<String>,
+    // pub cursor: CursorMut<'a, String>
 }
 
 impl Display {
     pub fn new(mut stdout: Stdout, content: &String) -> Display {
-        let lines: Vec<&str> = content.lines().collect();
-        let lines = list::from_vec(&lines);
+        let lines = content.lines().collect();
+        let mut lines = list::from(&lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {
             eprintln!("Error while initializing display: {}", e);
             process::exit(1);
         }
+        // let cursor = lines.cursor_front_mut();
 
-        Display { stdout, lines }
+        Display { stdout, lines}
     }
     
-    fn init(stdout: &mut Stdout, lines: &Vec<LinkedList<char>>) -> Result<()> {
+    fn init(stdout: &mut Stdout, lines: &LinkedList<String>) -> Result<()> {
         enable_raw_mode()?;
         execute!(stdout, 
             EnterAlternateScreen,
@@ -41,7 +43,7 @@ impl Display {
         for line in lines {
             queue!(
                 stdout,
-                Print(list::display(&line)),
+                Print(&line),
                 cursor::MoveToNextLine(1),
             )?;
         }
