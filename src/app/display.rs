@@ -58,16 +58,30 @@ impl Display {
         Ok(())
     }
 
-    pub fn refresh(&mut self) -> Result<()> {
-        let lines = &self.lines;
-        for line in lines {
-            queue!(
-                self.stdout,
-                Print(&line),
-                cursor::MoveToNextLine(1),
-            )?;
+    pub fn refresh_after(cursor: &mut CursorMut<String>) -> Result<()> {
+
+        // for line in lines {
+        //     queue!(
+        //         self.stdout,
+        //         Print(&line),
+        //         cursor::MoveToNextLine(1),
+        //     )?;
+        // }
+
+        //TODO: refresh everything after cursor 
+        
+        // save current position
+        let index = cursor.index().unwrap_or_else(|err| {
+            eprintln!("Cursor has invalid position: {}", err);
+            process::exit(1);
+        });
+
+        // iterate to end of list and print
+        let valid = true;
+        while valid {
+            if let Some(str)
         }
-        self.stdout.flush()?;
+
 
         Ok(())
     }

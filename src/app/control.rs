@@ -32,8 +32,6 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
                 _ => (),
             }
         } 
-
-        // display.refresh()
     }
 
     Ok(())
@@ -51,6 +49,7 @@ fn handle_key_event(mut stdout: &Stdout, cursor: &mut CursorMut<String>, event: 
                 KeyCode::Delete => {
                     let (cur_col, cur_row) = cursor::position()?;
 
+                    Display::refresh_after(cursor)?;
                     Ok(())
                 }
                 _ => return Ok(()),
@@ -73,6 +72,7 @@ fn handle_key_event(mut stdout: &Stdout, cursor: &mut CursorMut<String>, event: 
 
         _ => Ok(())
     }
+
 }
 
 /// Move cursor in the y rows and x columns if possible.

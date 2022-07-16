@@ -1,0 +1,1 @@
+- Look into gap buffer for efficient editing.
