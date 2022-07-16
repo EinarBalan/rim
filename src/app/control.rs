@@ -11,10 +11,10 @@ use std::{
     cmp,
 };
 
-use super::display::{Display, self};
+use super::display::Display;
 
 pub fn event_loop(display: &mut Display) -> Result<()> {
-    let stdout = &display.stdout;
+    let stdout = &mut display.stdout;
     let lines = &mut display.lines;
 
     loop {
@@ -37,7 +37,7 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
     Ok(())
 }
 
-fn handle_key_event(mut stdout: &Stdout, lines: &mut Vec<String>, event: KeyEvent) -> Result<()> {
+fn handle_key_event(stdout: &mut Stdout, lines: &mut Vec<String>, event: KeyEvent) -> Result<()> {
     match event {
         // standard controls (no modifiers applied)
         KeyEvent { modifiers: KeyModifiers::NONE, code } => {
@@ -83,7 +83,7 @@ fn handle_key_event(mut stdout: &Stdout, lines: &mut Vec<String>, event: KeyEven
 
 /// Move cursor in the y rows and x columns if possible.
 /// Will not move if outside the bounds of the text.
-fn move_cursor(mut stdout: &Stdout, lines: &Vec<String>,  y: i32, x: i32) -> Result<()> {
+fn move_cursor(stdout: &mut Stdout, lines: &Vec<String>,  y: i32, x: i32) -> Result<()> {
     let (cur_col, cur_row) = cursor::position().unwrap();
     let (mut new_col, new_row) = (((cur_col as i32) + x) as u16, ((cur_row as i32) + y) as u16);
 
@@ -104,7 +104,7 @@ fn move_cursor(mut stdout: &Stdout, lines: &Vec<String>,  y: i32, x: i32) -> Res
 }
 
 /// Delete character at left directed offset from cursor on current row if possible
-fn delete(mut stdout: &Stdout, offset: i32, lines: &mut Vec<String>) -> Result<()> {
+fn delete(stdout: &mut Stdout, offset: i32, lines: &mut Vec<String>) -> Result<()> {
     let (cur_col, cur_row) = cursor::position()?;
     let cur_line = &mut lines[cur_row as usize];
     
@@ -119,7 +119,7 @@ fn delete(mut stdout: &Stdout, offset: i32, lines: &mut Vec<String>) -> Result<(
     Ok(())
 }
 
-fn insert(mut stdout: &Stdout, c: char, lines: &mut Vec<String>) -> Result<()> {
+fn insert(stdout: &mut Stdout, c: char, lines: &mut Vec<String>) -> Result<()> {
     let (cur_col, cur_row) = cursor::position()?;
     let cur_line = &mut lines[cur_row as usize];
     

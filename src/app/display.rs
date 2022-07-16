@@ -26,7 +26,7 @@ pub struct Display  {
 impl Display {
     pub fn new(mut stdout: Stdout, content: &String) -> Display {
         let lines = content.lines().collect();
-        let mut lines = vector::from(lines);
+        let lines = vector::from(lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {
             eprintln!("Error while initializing display: {}", e);
             process::exit(1);
@@ -80,11 +80,6 @@ impl Display {
         stdout.flush()?;
 
         execute!(stdout, cursor::RestorePosition)?;
-
-        Ok(())
-    }
-
-    pub fn refresh_line (mut stdout: &Stdout, lines: &Vec<String>) -> Result<()> {
 
         Ok(())
     }
