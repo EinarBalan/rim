@@ -14,23 +14,21 @@ use crossterm::{
 
 use super::{list, control};
 
-pub struct Display {
+pub struct Display  {
     pub stdout: Stdout,
     pub lines: LinkedList<String>,
-    // pub cursor: CursorMut<'a, String>
 }
 
 impl Display {
     pub fn new(mut stdout: Stdout, content: &String) -> Display {
         let lines = content.lines().collect();
-        let lines = list::from(&lines);
+        let mut lines = list::from(&lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {
             eprintln!("Error while initializing display: {}", e);
             process::exit(1);
         }
-        // let cursor = lines.cursor_front_mut();
 
-        Display { stdout, lines}
+        Display { stdout, lines }
     }
     
     fn init(stdout: &mut Stdout, lines: &LinkedList<String>) -> Result<()> {
@@ -54,8 +52,22 @@ impl Display {
         Ok(())
     }
 
-    pub fn event_loop(&self) -> Result<()> {
-        control::event_loop(&self)?;
+    pub fn event_loop(&mut self) -> Result<()> {
+        control::event_loop(self)?;
+
+        Ok(())
+    }
+
+    pub fn refresh(&mut self) -> Result<()> {
+        let lines = &self.lines;
+        for line in lines {
+            queue!(
+                self.stdout,
+                Print(&line),
+                cursor::MoveToNextLine(1),
+            )?;
+        }
+        self.stdout.flush()?;
 
         Ok(())
     }

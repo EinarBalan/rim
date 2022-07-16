@@ -1,4 +1,11 @@
 #![feature(linked_list_cursors)]
+
+//! TEMP
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_mut)]
+#![allow(unused_variables)]
+
 mod app;
 
 use std::{env, process};

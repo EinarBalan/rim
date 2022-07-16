@@ -17,7 +17,7 @@ pub fn run(config: &Config) -> Result<()> {
 
     // initialize display with content from file
     let content = fs::read_to_string(&config.file_name)?;
-    let display = Display::new(stdout, &content);
+    let mut display = Display::new(stdout, &content);
 
     // run event loop 
     display.event_loop()?;
