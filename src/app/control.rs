@@ -14,8 +14,6 @@ use std::{
 use super::display::{Display, self};
 
 pub fn event_loop(display: &Display) -> Result<()> {
-    let stdout = &display.stdout;
-
     loop {
         if poll(Duration::from_millis(1000))? {
             match read()? {

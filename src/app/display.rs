@@ -6,7 +6,7 @@ use std::{
 
 use crossterm::{
     execute, queue,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode, DisableLineWrap},
     cursor,
     style::*,
     Result,
@@ -23,7 +23,7 @@ pub struct Display {
 impl Display {
     pub fn new(mut stdout: Stdout, content: &String) -> Display {
         let lines = content.lines().collect();
-        let mut lines = list::from(&lines);
+        let lines = list::from(&lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {
             eprintln!("Error while initializing display: {}", e);
             process::exit(1);
@@ -37,6 +37,7 @@ impl Display {
         enable_raw_mode()?;
         execute!(stdout, 
             EnterAlternateScreen,
+            DisableLineWrap,
             cursor::MoveTo(0, 0),
         )?;
 

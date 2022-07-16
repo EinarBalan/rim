@@ -1,4 +1,5 @@
 use std::collections::LinkedList;
+use crossterm::terminal;
 
 pub fn from(lines: &LinkedList<&str>) -> LinkedList<String> {
     let mut list = LinkedList::<String>::new();
