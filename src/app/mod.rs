@@ -1,7 +1,7 @@
 pub mod config;
 mod control;
 mod display;
-pub mod list;
+pub mod vector;
 
 use config::Config;
 use crossterm::Result;

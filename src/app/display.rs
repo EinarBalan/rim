@@ -1,28 +1,32 @@
 use std::{
     io::{Stdout, Write}, 
-    collections::{LinkedList, linked_list::CursorMut}, 
     process
 };
 
 use crossterm::{
     execute, queue,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode, DisableLineWrap},
+    terminal::{
+        EnterAlternateScreen, LeaveAlternateScreen,
+        enable_raw_mode, disable_raw_mode,
+        DisableLineWrap,
+        Clear, ClearType, self,
+    },
     cursor,
     style::*,
     Result,
 };
 
-use super::{list, control};
+use super::{vector, control};
 
 pub struct Display  {
     pub stdout: Stdout,
-    pub lines: LinkedList<String>,
+    pub lines: Vec<String>,
 }
 
 impl Display {
     pub fn new(mut stdout: Stdout, content: &String) -> Display {
         let lines = content.lines().collect();
-        let mut lines = list::from(&lines);
+        let mut lines = vector::from(lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {
             eprintln!("Error while initializing display: {}", e);
             process::exit(1);
@@ -31,7 +35,7 @@ impl Display {
         Display { stdout, lines }
     }
     
-    fn init(stdout: &mut Stdout, lines: &LinkedList<String>) -> Result<()> {
+    fn init(stdout: &mut Stdout, lines: &Vec<String>) -> Result<()> {
         enable_raw_mode()?;
         execute!(stdout, 
             EnterAlternateScreen,
@@ -54,34 +58,6 @@ impl Display {
 
     pub fn event_loop(&mut self) -> Result<()> {
         control::event_loop(self)?;
-
-        Ok(())
-    }
-
-    pub fn refresh_after(cursor: &mut CursorMut<String>) -> Result<()> {
-
-        // for line in lines {
-        //     queue!(
-        //         self.stdout,
-        //         Print(&line),
-        //         cursor::MoveToNextLine(1),
-        //     )?;
-        // }
-
-        //TODO: refresh everything after cursor 
-        
-        // save current position
-        let index = cursor.index().unwrap_or_else(|err| {
-            eprintln!("Cursor has invalid position: {}", err);
-            process::exit(1);
-        });
-
-        // iterate to end of list and print
-        let valid = true;
-        while valid {
-            if let Some(str)
-        }
-
 
         Ok(())
     }
