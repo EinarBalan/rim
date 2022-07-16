@@ -15,7 +15,8 @@ use crossterm::{
 use super::{list, control};
 
 pub struct Display {
-    stdout: Stdout
+    pub stdout: Stdout,
+    pub lines: Vec<LinkedList<char>>
 }
 
 impl Display {
@@ -27,7 +28,7 @@ impl Display {
             process::exit(1);
         }
 
-        Display { stdout }
+        Display { stdout, lines }
     }
     
     fn init(stdout: &mut Stdout, lines: &Vec<LinkedList<char>>) -> Result<()> {
@@ -51,7 +52,7 @@ impl Display {
     }
 
     pub fn event_loop(&self) -> Result<()> {
-        control::event_loop(&self.stdout)?;
+        control::event_loop(&self)?;
 
         Ok(())
     }
