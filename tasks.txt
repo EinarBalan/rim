@@ -1,12 +1,8 @@
-
-2. delete at beginning of line to splice up
-3. page down/up
-4. confirmation messages
-5. search 
-6. Look into gap buffer for efficient editing.
-7. controls help message
-8. yank
-9. undo/redo
-
-
-
+1. page down/up
+2. confirmation messages
+3. search 
+4. Look into gap buffer for efficient editing.
+5. controls help message
+6. yank
+7. undo/redo
+8. draw on empty space

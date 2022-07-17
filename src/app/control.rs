@@ -152,16 +152,26 @@ fn move_cursor_abs(display: &mut Display,  y: Option<u16>, x: Option<u16>) -> Re
 /// Delete character at left directed offset from cursor on current row if possible
 fn delete(display: &mut Display, offset: i32) -> Result<()> {
     let (cur_col, cur_row) = cursor::position()?;
-    let cur_line = &mut display.lines[cur_row as usize];
     
-    let pos = (cur_col as i32 - offset) as usize;
-    if pos < cur_line.len() {
-        cur_line.remove(pos);
-
-        if offset > 0 {
-            move_cursor(display, 0, -(offset as i32))?;
+    let pos = cur_col as i32 - offset;
+    if pos < 0 && offset != 0 {  //do not splice on delete
+        splice_line(display)?;
+        
+        return Ok(());
+    }
+    
+    if (cur_row as usize) < display.lines.len() {
+        let cur_line = &mut display.lines[cur_row as usize];
+        let pos = pos as usize;
+        if pos < cur_line.len() {
+            cur_line.remove(pos);
+    
+            if offset > 0 {
+                move_cursor(display, 0, -(offset as i32))?;
+            }
         }
     }
+
 
     Ok(())
 }
@@ -169,13 +179,22 @@ fn delete(display: &mut Display, offset: i32) -> Result<()> {
 /// Delete character starting at cursor until end of line
 fn kill(display: &mut Display) -> Result<()> {
     let (cur_col, cur_row) = cursor::position()?;
-    let cur_line = &mut display.lines[cur_row as usize];
-    
-    let pos = cur_col as usize;
-    if pos < cur_line.len() {
-        cur_line.replace_range(pos.., "");
-    }
 
+    if (cur_row as usize) < display.lines.len() {
+        let cur_line = display.lines[cur_row as usize].clone();
+        let pos = cur_col as usize;
+
+        if pos == 0 && cur_line.is_empty() {
+            splice_line(display)?;
+            return Ok(());
+        }
+    
+        if pos < cur_line.len() {
+            let new_line = cur_line.chars().take(pos).collect();
+            display.lines[cur_row as usize] = new_line;
+        }
+    }
+    
     Ok(())
 }
 
@@ -210,6 +229,28 @@ fn split_line(display: &mut Display) -> Result<()> {
     }
     move_cursor(display, 1, 0)?;
     move_cursor_abs(display, None, Some(0))?;
+
+    Ok(())
+}
+
+fn splice_line(display: &mut Display) -> Result<()> {
+    let (_cur_col, cur_row) = cursor::position()?;
+    let pos = cur_row as usize;
+
+    if pos >= display.lines.len() {
+        return Ok(());
+    }
+
+    let cur_line = display.lines[pos].clone();
+    if cur_row > 0 && !cur_line.is_empty() {
+        display.lines.remove(pos);
+        let prev_line = &mut display.lines[pos - 1];
+        prev_line.push_str(&cur_line);
+        move_cursor(display, -1, 0)?;
+    }
+    else if cur_line.is_empty() {
+        display.lines.remove(pos);
+    }
 
     Ok(())
 }
