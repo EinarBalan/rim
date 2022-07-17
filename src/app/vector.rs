@@ -3,5 +3,7 @@ pub fn from(lines: Vec<&str>) -> Vec<String> {
     for line in lines {
         vec.push(line.to_string());
     }
+    // we want a new line at the end of every buffer
+    vec.push(String::new()); 
     vec
 }

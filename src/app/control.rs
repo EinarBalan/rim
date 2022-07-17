@@ -45,16 +45,20 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
                 KeyCode::Right => { move_cursor(display, 0, 1) },
                 KeyCode::Up => { move_cursor(display, -1, 0) },
                 KeyCode::Down => { move_cursor(display, 1, 0) },
+                KeyCode::Enter => {
+                    split_line(display)?;
+                    display.refresh()
+                },
                 KeyCode::Backspace => { 
                     // Backspace
                     delete(display, 1)?;
                     display.refresh()
-                }
+                },
                 KeyCode::Char(c) => {
                     // type characters
                     insert(display, c)?;
                     display.refresh()
-                }
+                },
                 _ => return Ok(()),
             }
         },
@@ -73,16 +77,16 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
                     // Delete
                     delete(display, 0)?;
                     display.refresh()
-                }
+                },
                 KeyCode::Char('k') => { 
                     // Kill to end of line
                     kill(display)?;
                     display.refresh()
-                }
+                },
                 KeyCode::Char('s') => {
                     // Save edits to file 
                     save(display)
-                }
+                },
                 _ => return Ok(()),
             }
         },
@@ -92,7 +96,7 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
 
 }
 
-/// Move cursor in the y rows and x columns if possible.
+/// Move cursor y rows and x columns if possible.
 /// Will not move if outside the bounds of the text.
 fn move_cursor(display: &mut Display,  y: i32, x: i32) -> Result<()> {
     let lines = &mut display.lines;
@@ -113,6 +117,19 @@ fn move_cursor(display: &mut Display,  y: i32, x: i32) -> Result<()> {
         queue!(stdout, cursor::MoveTo(new_col, new_row))?;
         stdout.flush()?;
     }
+
+    Ok(())
+}
+
+/// Move cursor to position row y column x
+/// If either == -1, stay in same position
+fn move_cursor_abs(display: &mut Display,  y: Option<u16>, x: Option<u16>) -> Result<()> {
+    let (cur_col, cur_row) = cursor::position()?;
+
+    let move_y = y.unwrap_or_else(|| { cur_row });
+    let move_x = x.unwrap_or_else(|| { cur_col });
+
+    execute!(display.stdout, cursor::MoveTo(move_x, move_y))?;
 
     Ok(())
 }
@@ -143,7 +160,7 @@ fn kill(display: &mut Display) -> Result<()> {
     let cur_line = &mut lines[cur_row as usize];
     
     let pos = cur_col as usize;
-        if pos < cur_line.len() {
+    if pos < cur_line.len() {
         cur_line.replace_range(pos.., "");
     }
 
@@ -160,6 +177,29 @@ fn insert(display: &mut Display, c: char) -> Result<()> {
     if pos < cur_line.len() { cur_line.insert(pos, c); }
     else { cur_line.push(c); }
     move_cursor(display, 0, 1)?;
+
+    Ok(())
+}
+
+/// split current line into two at cursor 
+fn split_line(display: &mut Display) -> Result<()> {
+    let (cur_col, cur_row) = cursor::position()?;
+    let pos = cur_row as usize;
+
+    let cur_line = display.lines[pos].clone();
+    let first = cur_line.chars().take(cur_col as usize).collect();
+    let second = cur_line.chars().skip(cur_col as usize).collect();
+
+    display.lines[pos] = first;
+
+    if pos < display.lines.len() {
+        display.lines.insert(pos + 1, second);
+    }
+    else {
+        display.lines.push(second);
+    }
+    move_cursor(display, 1, 0)?;
+    move_cursor_abs(display, None, Some(0))?;
 
     Ok(())
 }
