@@ -9,6 +9,7 @@ use std::{
     io::Write,
     time::Duration, 
     cmp, fs,
+    process,
 };
 
 use super::display::Display;
@@ -86,6 +87,20 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
                 KeyCode::Char('s') => {
                     // Save edits to file 
                     save(display)
+                },
+                _ => return Ok(()),
+            }
+        },
+
+        // Shift modifier
+        KeyEvent { modifiers: KeyModifiers::SHIFT, code } => {
+            match code {
+                KeyCode::Char(c) => { 
+                    insert(display, c.to_uppercase().to_string().chars().next().unwrap_or_else(|| {
+                        eprintln!("Invalid characters entered");
+                        process::exit(1);
+                    }))?;
+                    display.refresh()
                 },
                 _ => return Ok(()),
             }
