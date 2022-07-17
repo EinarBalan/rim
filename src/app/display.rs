@@ -25,7 +25,7 @@ pub struct Display  {
 }
 
 impl Display {
-    pub fn new(mut stdout: Stdout, content: &String, config: &Config) -> Display {
+    pub fn new(mut stdout: Stdout, content: &str, config: &Config) -> Display {
         let lines = content.lines().collect();
         let lines = vector::from(lines);
         if let Err(e) = Display::init(&mut stdout, &lines) {

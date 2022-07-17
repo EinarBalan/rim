@@ -65,7 +65,7 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
                     insert(display, "    ")?;
                     display.refresh()
                 },
-                _ => return Ok(()),
+                _ => Ok(()),
             }
         },
 
@@ -93,7 +93,7 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
                     // Save edits to file 
                     save(display)
                 },
-                _ => return Ok(()),
+                _ => Ok(()),
             }
         },
 
@@ -104,7 +104,7 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
                     insert(display, &c.to_uppercase().to_string())?;
                     display.refresh()
                 },
-                _ => return Ok(()),
+                _ => Ok(()),
             }
         },
 
@@ -148,8 +148,8 @@ fn move_cursor(display: &mut Display,  y: i32, x: i32) -> Result<()> {
 fn move_cursor_abs(display: &mut Display,  y: Option<u16>, x: Option<u16>) -> Result<()> {
     let (cur_col, cur_row) = cursor::position()?;
 
-    let move_y = y.unwrap_or_else(|| { cur_row });
-    let move_x = x.unwrap_or_else(|| { cur_col });
+    let move_y = y.unwrap_or(cur_row);
+    let move_x = x.unwrap_or(cur_col);
 
     execute!(display.stdout, cursor::MoveTo(move_x, move_y))?;
 

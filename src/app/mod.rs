@@ -20,7 +20,7 @@ pub fn run(config: &Config) -> Result<()> {
         // file does not exist, so create a new buffer
         String::from("")
     });
-    let mut display = Display::new(stdout, &content, &config);
+    let mut display = Display::new(stdout, &content, config);
 
     // run event loop 
     display.event_loop()?;
