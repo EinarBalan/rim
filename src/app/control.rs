@@ -151,14 +151,13 @@ fn move_cursor_abs(display: &mut Display,  y: Option<u16>, x: Option<u16>) -> Re
 
 /// Delete character at left directed offset from cursor on current row if possible
 fn delete(display: &mut Display, offset: i32) -> Result<()> {
-    let lines = &mut display.lines;
-
     let (cur_col, cur_row) = cursor::position()?;
-    let cur_line = &mut lines[cur_row as usize];
+    let cur_line = &mut display.lines[cur_row as usize];
     
     let pos = (cur_col as i32 - offset) as usize;
     if pos < cur_line.len() {
         cur_line.remove(pos);
+
         if offset > 0 {
             move_cursor(display, 0, -(offset as i32))?;
         }
@@ -169,10 +168,8 @@ fn delete(display: &mut Display, offset: i32) -> Result<()> {
 
 /// Delete character starting at cursor until end of line
 fn kill(display: &mut Display) -> Result<()> {
-    let lines = &mut display.lines;
-
     let (cur_col, cur_row) = cursor::position()?;
-    let cur_line = &mut lines[cur_row as usize];
+    let cur_line = &mut display.lines[cur_row as usize];
     
     let pos = cur_col as usize;
     if pos < cur_line.len() {
@@ -183,10 +180,8 @@ fn kill(display: &mut Display) -> Result<()> {
 }
 
 fn insert(display: &mut Display, c: char) -> Result<()> {
-    let lines = &mut display.lines;
-    
     let (cur_col, cur_row) = cursor::position()?;
-    let cur_line = &mut lines[cur_row as usize];
+    let cur_line = &mut display.lines[cur_row as usize];
     
     let pos = cur_col as usize;
     if pos < cur_line.len() { cur_line.insert(pos, c); }

@@ -1,4 +1,4 @@
-1. refactor for iterators and fewer mutable bindings
+
 2. delete at beginning of line to splice up
 3. page down/up
 4. confirmation messages
@@ -7,5 +7,6 @@
 7. controls help message
 8. yank
 9. undo/redo
+
 
 
