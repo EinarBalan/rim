@@ -5,4 +5,3 @@
 5. controls help message
 6. yank
 7. undo/redo
-8. draw on empty space

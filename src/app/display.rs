@@ -16,7 +16,10 @@ use crossterm::{
     Result,
 };
 
-use super::{vector, control, config::Config};
+use super::{
+    vector, 
+    config::Config,
+};
 
 pub struct Display  {
     pub stdout: Stdout,
@@ -48,12 +51,6 @@ impl Display {
 
         queue!(stdout, cursor::MoveTo(0, 0))?;
         stdout.flush()?;
-
-        Ok(())
-    }
-
-    pub fn event_loop(&mut self) -> Result<()> {
-        control::event_loop(self)?;
 
         Ok(())
     }
@@ -113,6 +110,7 @@ impl Display {
 
 }
 
+/// return terminal to normal state on drop
 impl Drop for Display {
     fn drop(&mut self) {
         execute!(self.stdout, LeaveAlternateScreen).expect("Error on leaving alternate screen.");
