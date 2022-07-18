@@ -1,4 +1,4 @@
-0. fix out of bounds errors (move to error handling instead of prevention)
+0. move to error handling instead of prevention
     * exit(1) -> .expect()
 
 1. page down/up
@@ -9,9 +9,5 @@
 6. yank
 7. undo/redo
 8. draw on empty space
-
-
-
-
 
 

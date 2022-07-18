@@ -134,8 +134,12 @@ fn move_cursor(display: &mut Display,  dir: Direction) -> Result<()> {
             Direction::Start => { col = 0; },
             Direction::End => { col = line.len(); },
         }
+
+        // don't move to new row if it is outside bounds
         let num_rows = lines.len();
-        if row > num_rows { return Ok(()); }
+        if row >= num_rows { return Ok(()); }
+
+        // force column to always be in bounds
         let num_cols = lines[row as usize].len();
         col = cmp::min(col, num_cols);
 
@@ -229,11 +233,12 @@ fn split_line(display: &mut Display) -> Result<()> {
 fn splice_line(display: &mut Display) -> Result<()> {
     let (_cur_col, cur_row) = cursor_pos_usize();
 
-    if cur_row >= display.lines.len() {
-        return Ok(());
+    let cur_line = display.lines[cur_row].clone();
+    if cur_row >= display.lines.len() - 1 &&
+        cur_line.is_empty() {
+        move_cursor(display, Direction::Up)?;
     }
 
-    let cur_line = display.lines[cur_row].clone();
     if cur_row > 0 && !cur_line.is_empty() {
         move_cursor(display, Direction::Up)?;
         move_cursor(display, Direction::End)?;
