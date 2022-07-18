@@ -17,10 +17,8 @@ pub fn run(config: &Config) -> Result<()> {
     let stdout = stdout();
 
     // initialize display with content from file
-    let content = fs::read_to_string(&config.file_name).unwrap_or_else(|_| {
-        // file does not exist, so create a new buffer
-        String::from("")
-    });
+    let content = fs::read_to_string(&config.file_name)
+        .unwrap_or(String::from(""));
     let display = Display::new(stdout, &content, config);
     let mut control = Control::new(display);
 
