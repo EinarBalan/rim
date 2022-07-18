@@ -23,7 +23,10 @@ $ ./target/release/rim [FILE_NAME]
 | Cursor to end of line   | Ctrl     | e          |
 | Delete at cursor        | Ctrl     | d          |
 | Kill to end of line     | Ctrl     | k          |
-| Paste                   | Ctrl     | y          |
+| Paste killed text       | Ctrl     | y          |
+| Save                    | Ctrl     | s          |
+| Exit                    | -        | Esc        |
+| Exit                    | Ctrl     | x          |
 
 ## To be implemented
 - Show '-' if text is cut off horizontally
@@ -32,4 +35,6 @@ $ ./target/release/rim [FILE_NAME]
 - Find and replace 
 - Look into gap buffer for efficient editing
 - Controls help message
+- Open scratch buffer using `rim`
+- Exit without saving message
 - Undo/redo
