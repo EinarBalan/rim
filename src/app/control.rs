@@ -111,7 +111,9 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
 }
 
 fn cursor_pos_usize() -> (usize, usize) {
-    let (x, y) = cursor::position().unwrap();
+    let (x, y) = cursor::position()
+        .expect("Something went wrong trying to current cursor position.");
+        
     (x as usize, y as usize)
 }
 
@@ -130,23 +132,23 @@ fn move_cursor(display: &mut Display,  dir: Direction) -> Result<()> {
     let lines = &mut display.lines;
     let stdout = &mut display.stdout;
 
-    let (mut col, mut row) = cursor::position()?;
+    let (mut col, mut row) = cursor_pos_usize();
 
-    if let Some(line) = lines.get(row as usize) {
+    if let Some(line) = lines.get(row) {
         match dir {
             Direction::Up => { if row != 0 { row -= 1; } },
             Direction::Down => { row += 1; },
             Direction::Left => { if col != 0 {col -= 1; } },
             Direction::Right => { col += 1; },
             Direction::Start => { col = 0; },
-            Direction::End => { col = line.len() as u16 ; },
+            Direction::End => { col = line.len(); },
         }
-        let num_rows = lines.len() as u16;
+        let num_rows = lines.len();
         if row > num_rows { return Ok(()); }
-        let num_cols = lines[row as usize].len() as u16;
+        let num_cols = lines[row as usize].len();
         col = cmp::min(col, num_cols);
 
-        queue!(stdout, cursor::MoveTo(col, row))?;
+        queue!(stdout, cursor::MoveTo(col as u16, row as u16))?;
         stdout.flush()?;
     }
 
