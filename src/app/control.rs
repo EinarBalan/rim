@@ -17,12 +17,13 @@ enum Direction {
 }
 
 pub struct Control {
-    pub display: Display,
+    display: Display,
+    copied: Option<Vec<String>>
 }
 
 impl Control {
     pub fn new(display: Display) -> Control {
-        Control { display }
+        Control { display, copied: None }
     }
 
     pub fn event_loop(&mut self) -> Result<()> {
@@ -46,7 +47,7 @@ impl Control {
     }
 
     fn handle_key_event(&mut self, event: KeyEvent) -> Result<()> {
-        match event {
+        let result = match event {
             // standard controls (no modifiers applied)
             KeyEvent { modifiers: KeyModifiers::NONE, code } => {
                 match code {
@@ -100,6 +101,11 @@ impl Control {
                         // Save edits to file
                         self.save()
                     }
+                    KeyCode::Char('y') => {
+                        // Paste killed lines at cursor
+                        self.paste()?;
+                        self.display.refresh()
+                    }
                     _ => Ok(()),
                 }
             }
@@ -111,8 +117,10 @@ impl Control {
             }
 
             _ => Ok(()),
-        }
-        
+        };
+        self.display.stdout.flush()?;
+
+        result
     }
 
     /// Move cursor y rows and x columns if possible.
@@ -144,7 +152,6 @@ impl Control {
             col = cmp::min(col, num_cols);
 
             queue!(stdout, cursor::MoveTo(col as u16, row as u16))?;
-            stdout.flush()?;
         }
 
         Ok(())
@@ -191,7 +198,20 @@ impl Control {
 
             if cur_col < cur_line.len() {
                 let new_line = cur_line.chars().take(cur_col).collect();
+                let killed = cur_line.chars().skip(cur_col).collect();
+                self.copied = Some(vec![killed]);
                 self.display.lines[cur_row] = new_line;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn paste(&mut self) -> Result<()> {
+        let copied = self.copied.clone();
+        if let Some(copied) = copied {
+            for line in copied {
+                self.insert(&line)?;
             }
         }
 

@@ -1,7 +1,8 @@
 1. page down/up
-2. confirmation messages
+2. message/command bar
 3. search 
 4. Look into gap buffer for efficient editing.
 5. controls help message
-6. yank
-7. undo/redo
+6. undo/redo
+
+
