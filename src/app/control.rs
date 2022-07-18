@@ -112,8 +112,8 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
 
 fn cursor_pos_usize() -> (usize, usize) {
     let (x, y) = cursor::position()
-        .expect("Something went wrong trying to current cursor position.");
-        
+        .expect("Something went wrong trying to get current cursor position.");
+
     (x as usize, y as usize)
 }
 
