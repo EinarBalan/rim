@@ -1,10 +1,10 @@
 pub mod config;
-mod control;
+mod editor;
 mod display;
 pub mod vector;
 
 use config::Config;
-use control::Control;
+use editor::Editor;
 use crossterm::Result;
 use display::Display;
 
@@ -20,10 +20,10 @@ pub fn run(config: &Config) -> Result<()> {
     let content = fs::read_to_string(&config.file_name)
         .unwrap_or(String::from(""));
     let display = Display::new(stdout, &content, config);
-    let mut control = Control::new(display);
+    let mut editor = Editor::new(display);
 
     // run event loop 
-    control.event_loop()?;
+    editor.event_loop()?;
 
     Ok(())
 }

@@ -16,14 +16,14 @@ enum Direction {
     End,
 }
 
-pub struct Control {
+pub struct Editor {
     display: Display,
     copied: Option<Vec<String>>
 }
 
-impl Control {
-    pub fn new(display: Display) -> Control {
-        Control { display, copied: None }
+impl Editor {
+    pub fn new(display: Display) -> Editor {
+        Editor { display, copied: None }
     }
 
     pub fn event_loop(&mut self) -> Result<()> {
