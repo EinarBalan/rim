@@ -17,19 +17,15 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
     loop {
         // listen for key
         if poll(Duration::from_millis(1000))? {
-            match read()? {
-                Event::Key(key_event) => { 
-                    // exit program on escape or Ctrl-X
-                    if key_event.code == KeyCode::Esc || 
-                    (key_event.modifiers == KeyModifiers::CONTROL && key_event.code == KeyCode::Char('x')) { 
-                        break 
-                    }
-                    else { handle_key_event(display, key_event)?; }
-                },
-                _ => (),
+            if let Event::Key(key_event) = read()? { 
+                // exit program on escape or Ctrl-X
+                if key_event.code == KeyCode::Esc || 
+                (key_event.modifiers == KeyModifiers::CONTROL && key_event.code == KeyCode::Char('x')) { 
+                    break 
+                }
+                else { handle_key_event(display, key_event)?; }
             }
         } 
-
     }
 
     Ok(())
@@ -95,14 +91,9 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
         },
 
         // Shift modifier
-        KeyEvent { modifiers: KeyModifiers::SHIFT, code } => {
-            match code {
-                KeyCode::Char(c) => { 
-                    insert(display, &c.to_uppercase().to_string())?;
-                    display.refresh()
-                },
-                _ => Ok(()),
-            }
+        KeyEvent { modifiers: KeyModifiers::SHIFT, code: KeyCode::Char(c) } => {
+            insert(display, &c.to_uppercase().to_string())?;
+            display.refresh()
         },
 
         _ => Ok(())
