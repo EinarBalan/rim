@@ -1,6 +1,7 @@
-1. page down/up
+0. show - if text is cut off horizontally
+1. page down/up & left/right
 2. message/command bar
-3. search 
+3. find and replace 
 4. Look into gap buffer for efficient editing.
 5. controls help message
 6. undo/redo

@@ -60,12 +60,10 @@ impl Control {
                         self.display.refresh()
                     }
                     KeyCode::Backspace => {
-                        // Backspace
                         self.delete(1)?;
                         self.display.refresh()
                     }
                     KeyCode::Char(c) => {
-                        // type characters
                         let string = String::from(c);
                         self.insert(&string)?;
                         self.display.refresh()
@@ -88,21 +86,17 @@ impl Control {
                     KeyCode::Char('a') => self.move_cursor(Direction::Start),
                     KeyCode::Char('e') => self.move_cursor(Direction::End),
                     KeyCode::Char('d') => {
-                        // Delete
                         self.delete(0)?;
                         self.display.refresh()
                     }
                     KeyCode::Char('k') => {
-                        // Kill to end of line
                         self.kill()?;
                         self.display.refresh()
                     }
                     KeyCode::Char('s') => {
-                        // Save edits to file
                         self.save()
                     }
                     KeyCode::Char('y') => {
-                        // Paste killed lines at cursor
                         self.paste()?;
                         self.display.refresh()
                     }
@@ -207,6 +201,7 @@ impl Control {
         Ok(())
     }
 
+    /// Paste copied text at cursor
     fn paste(&mut self) -> Result<()> {
         let copied = self.copied.clone();
         if let Some(copied) = copied {
@@ -218,6 +213,7 @@ impl Control {
         Ok(())
     }
 
+    /// Insert string at cursor
     fn insert(&mut self, string: &str) -> Result<()> {
         let (cur_col, cur_row) = display::cursor_pos_usize()?;
         let cur_line = &mut self.display.lines[cur_row];
@@ -234,7 +230,7 @@ impl Control {
         Ok(())
     }
 
-    /// split current line into two at cursor
+    /// Split current line into two at cursor
     fn split_line(&mut self) -> Result<()> {
         let (cur_col, cur_row) = display::cursor_pos_usize()?;
 
@@ -255,6 +251,7 @@ impl Control {
         Ok(())
     }
 
+    /// Merge current line with line above
     fn splice_line(&mut self) -> Result<()> {
         let (_cur_col, cur_row) = display::cursor_pos_usize()?;
 
@@ -276,6 +273,7 @@ impl Control {
         Ok(())
     }
 
+    /// Save edits to current file
     fn save(&mut self) -> Result<()> {
         let lines = &mut self.display.lines;
         let file_name = &mut self.display.file_name;
