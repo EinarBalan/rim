@@ -36,16 +36,14 @@ pub fn event_loop(display: &mut Display) -> Result<()> {
 }
 
 fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
-    let stdout = &mut display.stdout;
-
     match event {
         // standard controls (no modifiers applied)
         KeyEvent { modifiers: KeyModifiers::NONE, code } => {
             match code {
-                KeyCode::Left => { move_cursor(display, 0, -1) },
-                KeyCode::Right => { move_cursor(display, 0, 1) },
-                KeyCode::Up => { move_cursor(display, -1, 0) },
-                KeyCode::Down => { move_cursor(display, 1, 0) },
+                KeyCode::Left => { move_cursor(display, Direction::Left) },
+                KeyCode::Right => { move_cursor(display, Direction::Right) },
+                KeyCode::Up => { move_cursor(display, Direction::Up) },
+                KeyCode::Down => { move_cursor(display, Direction::Down) },
                 KeyCode::Enter => {
                     split_line(display)?;
                     display.refresh()
@@ -71,14 +69,13 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
 
         // CTRL modifer
         KeyEvent { modifiers: KeyModifiers::CONTROL, code } => {
-            let width = terminal::size()?.0 as i32;
             match code {
-                KeyCode::Char('b') => { move_cursor(display, 0, -1) },
-                KeyCode::Char('f') => { move_cursor(display, 0, 1) },
-                KeyCode::Char('p') => { move_cursor(display, -1, 0) },
-                KeyCode::Char('n') => { move_cursor(display, 1, 0) },
-                KeyCode::Char('a') => { execute!(stdout, cursor::MoveToColumn(0)) },
-                KeyCode::Char('e') => { move_cursor(display, 0, width)},
+                KeyCode::Char('b') => { move_cursor(display, Direction::Left) },
+                KeyCode::Char('f') => { move_cursor(display, Direction::Right) },
+                KeyCode::Char('p') => { move_cursor(display, Direction::Up) },
+                KeyCode::Char('n') => { move_cursor(display, Direction::Down) },
+                KeyCode::Char('a') => { move_cursor(display, Direction::Start) },
+                KeyCode::Char('e') => { move_cursor(display, Direction::End) },
                 KeyCode::Char('d') => { 
                     // Delete
                     delete(display, 0)?;
@@ -118,40 +115,40 @@ fn cursor_pos_usize() -> (usize, usize) {
     (x as usize, y as usize)
 }
 
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+    Start,
+    End,    
+}
+
 /// Move cursor y rows and x columns if possible.
 /// Will not move if outside the bounds of the text.
-fn move_cursor(display: &mut Display,  y: i32, x: i32) -> Result<()> {
+fn move_cursor(display: &mut Display,  dir: Direction) -> Result<()> {
     let lines = &mut display.lines;
     let stdout = &mut display.stdout;
 
-    let (cur_col, cur_row) = cursor::position()?;
-    let (mut new_col, new_row) = (((cur_col as i32) + x) as u16, ((cur_row as i32) + y) as u16);
+    let (mut col, mut row) = cursor::position()?;
 
-    let num_rows = lines.len() as u16;
-    if new_row > num_rows {
-        return Ok(());
-    }
+    if let Some(line) = lines.get(row as usize) {
+        match dir {
+            Direction::Up => { if row != 0 { row -= 1; } },
+            Direction::Down => { row += 1; },
+            Direction::Left => { if col != 0 {col -= 1; } },
+            Direction::Right => { col += 1; },
+            Direction::Start => { col = 0; },
+            Direction::End => { col = line.len() as u16 ; },
+        }
+        let num_rows = lines.len() as u16;
+        if row > num_rows { return Ok(()); }
+        let num_cols = lines[row as usize].len() as u16;
+        col = cmp::min(col, num_cols);
 
-    if let Some(cur_line) = lines.get(new_row as usize) {
-        let num_cols = cur_line.len() as u16;
-        new_col = cmp::min(new_col, num_cols);
-    
-        queue!(stdout, cursor::MoveTo(new_col, new_row))?;
+        queue!(stdout, cursor::MoveTo(col, row))?;
         stdout.flush()?;
     }
-
-    Ok(())
-}
-
-/// Move cursor to position row y column x
-/// If either == -1, stay in same position
-fn move_cursor_abs(display: &mut Display,  y: Option<u16>, x: Option<u16>) -> Result<()> {
-    let (cur_col, cur_row) = cursor::position()?;
-
-    let move_y = y.unwrap_or(cur_row);
-    let move_x = x.unwrap_or(cur_col);
-
-    execute!(display.stdout, cursor::MoveTo(move_x, move_y))?;
 
     Ok(())
 }
@@ -173,8 +170,8 @@ fn delete(display: &mut Display, offset: i32) -> Result<()> {
         if pos < cur_line.len() {
             cur_line.remove(pos);
     
-            if offset > 0 {
-                move_cursor(display, 0, -(offset as i32))?;
+            for _ in 0..offset {
+                move_cursor(display, Direction::Left)?;
             }
         }
     }
@@ -209,7 +206,7 @@ fn insert(display: &mut Display, string: &str) -> Result<()> {
     
     if cur_col < cur_line.len() { cur_line.insert_str(cur_col, string); }
     else { cur_line.push_str(string); }
-    move_cursor(display, 0, string.len() as i32)?;
+    for _ in 0..string.len() { move_cursor(display, Direction::Right)?; }
 
     Ok(())
 }
@@ -230,8 +227,8 @@ fn split_line(display: &mut Display) -> Result<()> {
     else {
         display.lines.push(second);
     }
-    move_cursor(display, 1, 0)?;
-    move_cursor_abs(display, None, Some(0))?;
+    move_cursor(display, Direction::Down)?;
+    move_cursor(display, Direction::Start)?;
 
     Ok(())
 }
@@ -245,11 +242,11 @@ fn splice_line(display: &mut Display) -> Result<()> {
 
     let cur_line = display.lines[cur_row].clone();
     if cur_row > 0 && !cur_line.is_empty() {
+        move_cursor(display, Direction::Up)?;
+        move_cursor(display, Direction::End)?;
         display.lines.remove(cur_row);
         let prev_line = &mut display.lines[cur_row - 1];
-        prev_line.push_str(&cur_line);
-        move_cursor(display, -1, 0)?;
-    }
+        prev_line.push_str(&cur_line);    }
     else if cur_line.is_empty() {
         display.lines.remove(cur_row);
     }

@@ -1,8 +1,5 @@
-0. move cursor when splicing up
 0. fix out of bounds errors (move to error handling instead of prevention)
     * exit(1) -> .expect()
-0. refactor move function to use enum and match
-    * also incorporate expected move behaviour as in Wurd
 
 1. page down/up
 2. confirmation messages
@@ -12,6 +9,7 @@
 6. yank
 7. undo/redo
 8. draw on empty space
+
 
 
 
