@@ -10,7 +10,16 @@ use std::{
     cmp, fs,
 };
 
-use super::display::Display;
+use super::display::{self, Display};
+
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+    Start,
+    End,    
+}
 
 pub fn event_loop(display: &mut Display) -> Result<()> {
     loop {
@@ -100,28 +109,13 @@ fn handle_key_event(display: &mut Display, event: KeyEvent) -> Result<()> {
 
 }
 
-fn cursor_pos_usize() -> Result<(usize, usize)> {
-    let (x, y) = cursor::position()?;
-
-    Ok((x as usize, y as usize))
-}
-
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-    Start,
-    End,    
-}
-
 /// Move cursor y rows and x columns if possible.
 /// Will not move if outside the bounds of the text.
 fn move_cursor(display: &mut Display,  dir: Direction) -> Result<()> {
     let lines = &mut display.lines;
     let stdout = &mut display.stdout;
 
-    let (mut col, mut row) = cursor_pos_usize()?;
+    let (mut col, mut row) = display::cursor_pos_usize()?;
 
     if let Some(line) = lines.get(row) {
         match dir {
@@ -150,7 +144,7 @@ fn move_cursor(display: &mut Display,  dir: Direction) -> Result<()> {
 
 /// Delete character at left directed offset from cursor on current row if possible
 fn delete(display: &mut Display, offset: i32) -> Result<()> {
-    let (cur_col, cur_row) = cursor_pos_usize()?;
+    let (cur_col, cur_row) = display::cursor_pos_usize()?;
     
     let pos = cur_col as i32 - offset;
     if pos < 0 && offset != 0 {  //do not splice on delete
@@ -174,7 +168,7 @@ fn delete(display: &mut Display, offset: i32) -> Result<()> {
 
 /// Delete character starting at cursor until end of line
 fn kill(display: &mut Display) -> Result<()> {
-    let (cur_col, cur_row) = cursor_pos_usize()?;
+    let (cur_col, cur_row) = display::cursor_pos_usize()?;
 
     if cur_row < display.lines.len() {
         let cur_line = display.lines[cur_row].clone();
@@ -194,7 +188,7 @@ fn kill(display: &mut Display) -> Result<()> {
 }
 
 fn insert(display: &mut Display, string: &str) -> Result<()> {
-    let (cur_col, cur_row) = cursor_pos_usize()?;
+    let (cur_col, cur_row) = display::cursor_pos_usize()?;
     let cur_line = &mut display.lines[cur_row];
     
     if cur_col < cur_line.len() { cur_line.insert_str(cur_col, string); }
@@ -206,7 +200,7 @@ fn insert(display: &mut Display, string: &str) -> Result<()> {
 
 /// split current line into two at cursor 
 fn split_line(display: &mut Display) -> Result<()> {
-    let (cur_col, cur_row) = cursor_pos_usize()?;
+    let (cur_col, cur_row) = display::cursor_pos_usize()?;
 
     let cur_line = display.lines[cur_row].clone();
     let first = cur_line.chars().take(cur_col).collect();
@@ -227,7 +221,7 @@ fn split_line(display: &mut Display) -> Result<()> {
 }
 
 fn splice_line(display: &mut Display) -> Result<()> {
-    let (_cur_col, cur_row) = cursor_pos_usize()?;
+    let (_cur_col, cur_row) = display::cursor_pos_usize()?;
 
     let cur_line = display.lines[cur_row].clone();
     if cur_row >= display.lines.len() - 1 &&
