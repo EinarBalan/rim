@@ -26,7 +26,6 @@ $ ./target/release/rim [FILE_NAME]
 | Paste                   | Ctrl     | y          |
 
 ## To be implemented
-- Control rename to Editor
 - Show '-' if text is cut off horizontally
 - Page down/up & left/right
 - Message/command bar

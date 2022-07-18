@@ -1,6 +1,5 @@
 use std::{
     io::{Stdout, Write}, 
-    process
 };
 
 use crossterm::{
@@ -28,29 +27,25 @@ pub struct Display  {
 }
 
 impl Display {
-    pub fn new(mut stdout: Stdout, content: &str, config: &Config) -> Display {
+    pub fn new(stdout: Stdout, content: &str, config: &Config) -> Display {
         let lines = content.lines().collect();
         let lines = vector::from(lines);
-        if let Err(e) = Display::init(&mut stdout, &lines) {
-            eprintln!("Error while initializing display: {}", e);
-            process::exit(1);
-        }
 
         Display { stdout, lines, file_name: config.file_name.clone()}
     }
     
-    fn init(stdout: &mut Stdout, lines: &Vec<String>) -> Result<()> {
+    pub fn show(&mut self) -> Result<()> {
         enable_raw_mode()?;
-        execute!(stdout, 
+        execute!(self.stdout, 
             EnterAlternateScreen,
             DisableLineWrap,
             cursor::MoveTo(0, 0),
         )?;
 
-        Display::print_lines(stdout, lines)?;
+        self.print_lines()?;
 
-        queue!(stdout, cursor::MoveTo(0, 0))?;
-        stdout.flush()?;
+        queue!(self.stdout, cursor::MoveTo(0, 0))?;
+        self.stdout.flush()?;
 
         Ok(())
     }
@@ -63,51 +58,26 @@ impl Display {
             Clear(ClearType::All),
         )?;
 
-        Display::print_lines(&mut self.stdout, &self.lines)?;
+        self.print_lines()?;
 
         execute!(self.stdout, cursor::RestorePosition)?;
 
         Ok(())
     }
 
-    /// prints a line at the position of the cursor, then moves cursor down
-    fn queue_print_line(stdout: &mut Stdout, line: &str) -> Result<()> {
-        queue!(
-            stdout,
-            Print(line),
-            cursor::MoveToNextLine(1),
-        )?;
-
-        Ok(())
-    }
-
     /// prints all lines to stdout
-    fn print_lines(stdout: &mut Stdout, lines: &Vec<String>) -> Result<()> {
-        for line in lines {
-            Display::queue_print_line(stdout, line)?;
+    fn print_lines(&mut self) -> Result<()> {
+        for line in &self.lines {
+            queue!(
+                self.stdout,
+                Print(line),
+                cursor::MoveToNextLine(1),
+            )?;
         }
-        stdout.flush()?;
+        self.stdout.flush()?;
 
         Ok(())
     }
-
-    #[allow(dead_code)]
-    /// prints empty indicators starting from cursor until end of terminal
-    /// ! Currently broken
-    fn print_empty_indicators(stdout: &mut Stdout) -> Result<()> {
-        let (_term_cols, term_rows) = terminal_usize()?;
-
-        loop {
-            let (_col, row) = cursor_pos_usize()?;
-
-            if row == term_rows { break; }
-            Display::queue_print_line(stdout, "~")?;
-        }
-        stdout.flush()?;
-
-        Ok(())
-    }
-
 }
 
 /// return terminal to normal state on drop
@@ -125,6 +95,7 @@ pub fn cursor_pos_usize() -> Result<(usize, usize)> {
     Ok((x as usize, y as usize))
 }
 
+#[allow(dead_code)]
 /// Returns the terminal size (columns, rows) as usize
 pub fn terminal_usize() -> Result<(usize, usize)> {
     let (col, row) = terminal::size()?;

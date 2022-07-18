@@ -16,13 +16,16 @@ use std::{
 pub fn run(config: &Config) -> Result<()> {
     let stdout = stdout();
 
-    // initialize display with content from file
+    // read contents from file or create new buffer
     let content = fs::read_to_string(&config.file_name)
         .unwrap_or(String::from(""));
-    let display = Display::new(stdout, &content, config);
-    let mut editor = Editor::new(display);
+
+    // initialize display with content from file
+    let mut display = Display::new(stdout, &content, config);
+    display.show()?;
 
     // run event loop 
+    let mut editor = Editor::new(display);
     editor.event_loop()?;
 
     Ok(())
