@@ -64,26 +64,23 @@ impl Display {
     }
 
     pub fn refresh(&mut self) -> Result<()> {
-        let lines = &mut self.lines;
-        let stdout = &mut self.stdout;
-
         execute!(
-            stdout, 
+            self.stdout, 
             cursor::SavePosition,
             cursor::MoveTo(0, 0),
             Clear(ClearType::All),
         )?;
 
-        for line in lines {
+        for line in &self.lines {
             queue!(
-                stdout,
-                Print(&line),
+                self.stdout,
+                Print(line),
                 cursor::MoveToNextLine(1),
             )?;
         }
-        stdout.flush()?;
+        self.stdout.flush()?;
 
-        execute!(stdout, cursor::RestorePosition)?;
+        execute!(self.stdout, cursor::RestorePosition)?;
 
         Ok(())
     }
@@ -91,7 +88,7 @@ impl Display {
 
 impl Drop for Display {
     fn drop(&mut self) {
-        execute!(self. stdout, LeaveAlternateScreen).unwrap();
-        disable_raw_mode().unwrap();
+        execute!(self.stdout, LeaveAlternateScreen).expect("Error on leaving alternate screen.");
+        disable_raw_mode().expect("Error on disabling raw mode.");
     }
 }
