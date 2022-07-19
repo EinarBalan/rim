@@ -29,7 +29,6 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
-- kill line at end of line to splice next line up (change from start to end)
 - Show '-' if text is cut off horizontally
 - Page down/up & left/right
 - Message/command bar

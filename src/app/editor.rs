@@ -158,20 +158,18 @@ impl Editor {
         let pos = cur_col as i32 - offset;
         if pos < 0 && offset != 0 {
             //do not splice on delete
-            self.splice_line()?;
+            self.splice_up()?;
 
             return Ok(());
         }
 
-        if cur_row < self.display.lines.len() {
-            let cur_line = &mut self.display.lines[cur_row];
-            let pos = pos as usize;
-            if pos < cur_line.len() {
-                cur_line.remove(pos);
+        let cur_line = &mut self.display.lines[cur_row];
+        let pos = pos as usize;
+        if pos < cur_line.len() {
+            cur_line.remove(pos);
 
-                for _ in 0..offset {
-                    self.move_cursor(Direction::Left)?;
-                }
+            for _ in 0..offset {
+                self.move_cursor(Direction::Left)?;
             }
         }
 
@@ -182,20 +180,21 @@ impl Editor {
     fn kill(&mut self) -> Result<()> {
         let (cur_col, cur_row) = display::cursor_pos_usize()?;
 
-        if cur_row < self.display.lines.len() {
-            let cur_line = self.display.lines[cur_row].clone();
+        let cur_line = self.display.lines[cur_row].clone();
 
-            if cur_col == 0 && cur_line.is_empty() {
-                self.splice_line()?;
-                return Ok(());
-            }
+        if cur_col == 0 && cur_line.is_empty() {
+            self.splice_up()?;
+            return Ok(());
+        }
 
-            if cur_col < cur_line.len() {
-                let new_line = cur_line.chars().take(cur_col).collect();
-                let killed = cur_line.chars().skip(cur_col).collect();
-                self.copied = Some(vec![killed]);
-                self.display.lines[cur_row] = new_line;
-            }
+        if cur_col < cur_line.len() {
+            // kill to end and copy
+            let new_line = cur_line.chars().take(cur_col).collect();
+            let killed = cur_line.chars().skip(cur_col).collect();
+            self.copied = Some(vec![killed]);
+            self.display.lines[cur_row] = new_line;
+        } else {
+            self.splice_down()?;
         }
 
         Ok(())
@@ -253,7 +252,7 @@ impl Editor {
 
 
     /// Merge current line with line above
-    fn splice_line(&mut self) -> Result<()> {
+    fn splice_up(&mut self) -> Result<()> {
         let (_cur_col, cur_row) = display::cursor_pos_usize()?;
 
         let num_rows = self.display.lines.len();
@@ -263,11 +262,6 @@ impl Editor {
 
             if cur_line.is_empty(){
                 self.display.lines.remove(cur_row);
-
-                if num_rows != 1 && num_rows == num_rows - 1 {
-                    self.move_cursor(Direction::Up)?;
-                    self.move_cursor(Direction::End)?;
-                }
             } else if cur_row > 0 {
                 self.move_cursor(Direction::Up)?;
                 self.move_cursor(Direction::End)?;
@@ -277,6 +271,25 @@ impl Editor {
                 let prev_line = &mut self.display.lines[cur_row - 1];
                 prev_line.push_str(&cur_line);
             } 
+        } else {
+            self.move_cursor(Direction::Up)?;
+        }
+
+        Ok(())
+    }
+
+    /// Merge current line with line below
+    fn splice_down(&mut self) -> Result<()> {
+        let (_cur_col, cur_row) = display::cursor_pos_usize()?;
+
+        let num_rows = self.display.lines.len();
+
+        if cur_row < num_rows - 1 {
+            let next_line = self.display.lines[cur_row + 1].clone();
+            self.display.lines.remove(cur_row + 1);
+
+            let cur_line = &mut self.display.lines[cur_row];
+            cur_line.push_str(&next_line);        
         }
 
         Ok(())
