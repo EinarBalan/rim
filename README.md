@@ -29,6 +29,8 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
+- fix panic on deleted first (and only line) when inserting 
+- kill line at end of line to splice next line up (change from start to end)
 - Show '-' if text is cut off horizontally
 - Page down/up & left/right
 - Message/command bar
