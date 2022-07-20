@@ -29,11 +29,11 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
+- fix cursor move issue on delete non empty last line
 - Show '-' if text is cut off horizontally
 - Page down/up & left/right
 - Message/command bar
 - Find and replace 
-- Look into gap buffer for efficient editing
 - Controls help message
 - Open scratch buffer using `rim`
 - Exit without saving message

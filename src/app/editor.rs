@@ -191,8 +191,6 @@ impl Editor {
 
         if cur_col < cur_line.len() {
             // kill to end and copy
-            // let new_line = cur_line.iter().take(cur_col).collect();
-            // let killed = cur_line.iter().skip(cur_col).collect();
             let killed = cur_line.drain(cur_col..).collect();
             self.copied = Some(vec![killed]);
         } else {
@@ -237,22 +235,13 @@ impl Editor {
 
         let cur_line = &mut self.display.lines[cur_row];
         let new_line = cur_line.drain(cur_col..).collect();
-        // let first = cur_line.iter().take(cur_col).collect();
-        // let second = cur_line.iter().skip(cur_col).collect();
+        self.display.lines.insert(cur_row + 1, new_line);
 
-        // self.display.lines[cur_row] = cur_line;
-
-        if cur_row < self.display.lines.len() {
-            self.display.lines.insert(cur_row + 1, new_line);
-        } else {
-            self.display.lines.push_back(new_line);
-        }
         self.move_cursor(Direction::Down)?;
         self.move_cursor(Direction::Start)?;
 
         Ok(())
     }
-
 
     /// Merge current line with line above
     fn splice_up(&mut self) -> Result<()> {
