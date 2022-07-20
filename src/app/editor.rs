@@ -32,15 +32,21 @@ impl Editor {
         loop {
             // listen for key
             if poll(Duration::from_millis(1000))? {
-                if let Event::Key(key_event) = read()? {
-                    // exit program on escape or Ctrl-X
-                    if key_event.code == KeyCode::Esc ||
-                        (key_event.modifiers == KeyModifiers::CONTROL && key_event.code == KeyCode::Char('x'))
-                    {
-                        break;
-                    } else {
-                        self.handle_key_event(key_event)?;
+                match read()? {
+                    Event::Key(key_event) => {
+                        // exit program on escape or Ctrl-X
+                        if key_event.code == KeyCode::Esc ||
+                            (key_event.modifiers == KeyModifiers::CONTROL && key_event.code == KeyCode::Char('x'))
+                        {
+                            break;
+                        } else {
+                            self.handle_key_event(key_event)?;
+                        }
                     }
+                    Event::Resize(_, _) => {
+                        self.display.refresh()?;
+                    }
+                    _ => (),
                 }
             }
         }
