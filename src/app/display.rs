@@ -1,6 +1,6 @@
 use std::{
     io::{Stdout, Write}, 
-    cmp,
+    cmp, 
 };
 
 use crossterm::{
@@ -78,22 +78,48 @@ impl Display {
         Ok(())
     }
 
-    /// prints all lines to stdout
-    fn print_lines(&mut self) -> Result<()> {
-        let num_lines = self.lines.len();
-        let (_cols, rows) = terminal_usize()?;
-        
-        let last = num_lines - 1;
+    fn add_new_line(&mut self) {
+        let last = self.lines.len() - 1;
         let last_line = &self.lines[last];
         if !last_line.is_empty() {
             self.lines.push_back(GapBuffer::new());
         }
+    }
 
+    pub fn refresh_line(&mut self) -> Result<()> {
+        self.add_new_line();
+
+        let (_, cur_term_row) = cursor::position()?;
+        let (_cur_col, cur_row) = self.cursor_pos_diplaced()?;
+        let cur_line = &self.lines[cur_row];
+
+        execute!(
+            self.stdout, 
+            cursor::SavePosition,
+            cursor::MoveTo(0, cur_term_row),
+            Clear(ClearType::CurrentLine),
+            Print(buf::to_string(cur_line)),
+            cursor::RestorePosition,
+        )?;
+
+        Ok(())
+    }
+
+    /// prints all lines to stdout
+    fn print_lines(&mut self) -> Result<()> {
+        self.add_new_line();
+
+        let (_cols, rows) = terminal_usize()?;
+        let num_lines = self.lines.len();
         let last = cmp::min(num_lines, rows);
-        let screen_lines = self.lines.range(self.first_row..(self.first_row + last));
+
+        let mut screen_lines = self.lines.range(self.first_row..); 
+        if self.lines.len() > self.first_row + last {
+            screen_lines = self.lines.range(self.first_row..(self.first_row + last)); 
+        }
 
         for line in &screen_lines {
-            // hanlde lines shorter than first col
+            // handle lines shorter than first col
             let mut range = String::new();
             let (num_cols, first_col) = (line.len() as i32, self.first_col as i32);
             if num_cols - first_col > 0 { 
@@ -111,9 +137,11 @@ impl Display {
     }
 
     pub fn move_down(&mut self) {
-        let num_lines = self.lines.len();
-        let (_cols, rows) = terminal_usize().unwrap();
-        if self.first_row < (num_lines - rows - 1) {
+        let num_lines = self.lines.len() as i32;
+        let (_cols, rows) = terminal_usize()
+            .expect("Something went wrong finding size of terminal");
+        let rows = rows as i32;
+        if (self.first_row as i32) < (num_lines - rows - 1) {
             self.first_row += 1;
         }
     }
@@ -147,7 +175,7 @@ impl Display {
 /// return terminal to normal state on drop
 impl Drop for Display {
     fn drop(&mut self) {
-        execute!(self.stdout, LeaveAlternateScreen).expect("Error on leaving alternate screen.");
+        execute!(self.stdout, cursor::Show, LeaveAlternateScreen, ).expect("Error on leaving alternate screen.");
         disable_raw_mode().expect("Error on disabling raw mode.");
     }
 }

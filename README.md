@@ -31,12 +31,15 @@ $ ./target/release/rim [FILE_NAME]
 ## To be implemented
 - Page down/up & left/right
    * auto scroll when cursor nears border of terminal
-- fix flicker 
-- on resize, refresh
+- change refresh to refresh to end of file (starting from previous line)
+- fix slow paste sometimes (move from iterative to jump)
+- refresh on resize
 - Message/command bar
 - Find and replace 
 - Controls help message
 - Open scratch buffer using `rim`
 - Exit without saving message
 - Undo/redo
+
+
 

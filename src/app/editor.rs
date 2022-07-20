@@ -52,29 +52,20 @@ impl Editor {
         let result = match event {
             // standard controls (no modifiers applied)
             KeyEvent { modifiers: KeyModifiers::NONE, code } => {
-                let res = match code {
+                match code {
                     KeyCode::Up => self.move_display(Direction::Up),
                     KeyCode::Down => self.move_display(Direction::Down),
                     KeyCode::Left => self.move_display(Direction::Left),
                     KeyCode::Right => self.move_display(Direction::Right),
-                    KeyCode::Enter => {
-                        self.split_line()
-                    }
-                    KeyCode::Backspace => {
-                        self.delete(1)
-                    }
+                    KeyCode::Enter => self.split_line(),
+                    KeyCode::Backspace => self.delete(1),
+                    KeyCode::Tab => self.insert("    "),
                     KeyCode::Char(c) => {
                         let string = String::from(c);
                         self.insert(&string)
                     }
-                    KeyCode::Tab => {
-                        self.insert("    ")
-                    }
                     _ => Ok(()),
-                };
-                self.display.refresh()?;
-
-                res
+                }
             }
 
             // CTRL modifer
@@ -86,29 +77,17 @@ impl Editor {
                     KeyCode::Char('n') => self.move_cursor(Direction::Down),
                     KeyCode::Char('a') => self.move_cursor(Direction::Start),
                     KeyCode::Char('e') => self.move_cursor(Direction::End),
-                    KeyCode::Char('d') => {
-                        self.delete(0)?;
-                        self.display.refresh()
-                    }
-                    KeyCode::Char('k') => {
-                        self.kill()?;
-                        self.display.refresh()
-                    }
-                    KeyCode::Char('s') => {
-                        self.save()
-                    }
-                    KeyCode::Char('y') => {
-                        self.paste()?;
-                        self.display.refresh()
-                    }
+                    KeyCode::Char('d') => self.delete(0),
+                    KeyCode::Char('k') => self.kill(),
+                    KeyCode::Char('s') => self.save(),
+                    KeyCode::Char('y') => self.paste(),
                     _ => Ok(()),
                 }
             }
 
             // Shift modifier
             KeyEvent { modifiers: KeyModifiers::SHIFT, code: KeyCode::Char(c) } => {
-                self.insert(&c.to_uppercase().to_string())?;
-                self.display.refresh()
+                self.insert(&c.to_uppercase().to_string())
             }
 
             _ => Ok(()),
@@ -121,7 +100,7 @@ impl Editor {
     /// Move cursor y rows and x columns if possible.
     /// Will not move if outside the bounds of the text.
     fn move_cursor(&mut self, dir: Direction) -> Result<()> {
-        let (_cur_col, mut cur_row) = self.display.cursor_pos_diplaced()?.clone();
+        let (_cur_col, mut cur_row) = self.display.cursor_pos_diplaced()?;
         let (mut col, mut row) = display::cursor_pos_usize()?; 
         
         let lines = &mut self.display.lines;
@@ -144,7 +123,11 @@ impl Editor {
             }
 
             // force column to always be in bounds
-            let num_cols = lines[cur_row as usize].len();
+            fs::write("test", format!("{}", cur_row))?;
+            let mut num_cols = col;
+            if let Some(line) = lines.get(cur_row as usize) {
+                num_cols = line.len();
+            }
             col = cmp::min(col, num_cols);
 
             queue!(stdout, cursor::MoveTo(col as u16, row as u16))?;
@@ -161,6 +144,7 @@ impl Editor {
             // Direction::Right => self.display.move_right(),
             _ => return Ok(())
         }
+        self.display.refresh()?;
 
         Ok(())        
     }
@@ -177,16 +161,19 @@ impl Editor {
             return Ok(());
         }
 
-        let cur_line = &mut self.display.lines[cur_row];
-        let pos = pos as usize;
-        if pos < cur_line.len() {
-            cur_line.remove(pos);
-
-            for _ in 0..offset {
-                self.move_cursor(Direction::Left)?;
+        
+        if let Some(cur_line) = self.display.lines.get_mut(cur_row) {
+            let pos = pos as usize;
+            if pos < cur_line.len() {
+                cur_line.remove(pos);
+    
+                for _ in 0..offset {
+                    self.move_cursor(Direction::Left)?;
+                }
+                self.display.refresh_line()?;
             }
         }
-
+    
         Ok(())
     }
 
@@ -194,19 +181,20 @@ impl Editor {
     fn kill(&mut self) -> Result<()> {
         let (cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
-        let cur_line = &mut self.display.lines[cur_row];
-
-        if cur_col == 0 && cur_line.is_empty() {
-            self.splice_up()?;
-            return Ok(());
-        }
-
-        if cur_col < cur_line.len() {
-            // kill to end and copy
-            let killed = cur_line.drain(cur_col..).collect();
-            self.copied = Some(vec![killed]);
-        } else {
-            self.splice_down()?;
+        if let Some(cur_line) = self.display.lines.get_mut(cur_row) {
+            if cur_col == 0 && cur_line.is_empty() {
+                self.splice_up()?;
+                return Ok(());
+            }
+    
+            if cur_col < cur_line.len() {
+                // kill to end and copy
+                let killed = cur_line.drain(cur_col..).collect();
+                self.copied = Some(vec![killed]);
+                self.display.refresh_line()?;
+            } else {
+                self.splice_down()?;
+            }
         }
 
         Ok(())
@@ -220,6 +208,7 @@ impl Editor {
                 self.insert(&line)?;
             }
         }
+        self.display.refresh_line()?;
 
         Ok(())
     }
@@ -228,17 +217,18 @@ impl Editor {
     fn insert(&mut self, string: &str) -> Result<()> {
         let (cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
-        let cur_line = &mut self.display.lines[cur_row];
-
-        if cur_col < cur_line.len() {
-            cur_line.insert_many(cur_col, string.chars());
-        } else {
-            buf::push_owned(cur_line, string.chars());
+        if let Some(cur_line) = self.display.lines.get_mut(cur_row) {
+            if cur_col < cur_line.len() {
+                cur_line.insert_many(cur_col, string.chars());
+            } else {
+                buf::push_owned(cur_line, string.chars());
+            }
+            for _ in 0..string.len() {
+                self.move_cursor(Direction::Right)?;
+            }
+            self.display.refresh_line()?;
         }
-        for _ in 0..string.len() {
-            self.move_cursor(Direction::Right)?;
-        }
-
+        
         Ok(())
     }
 
@@ -252,6 +242,8 @@ impl Editor {
 
         self.move_cursor(Direction::Down)?;
         self.move_cursor(Direction::Start)?;
+
+        self.display.refresh()?;
 
         Ok(())
     }
@@ -279,6 +271,7 @@ impl Editor {
         } else {
             self.move_cursor(Direction::Up)?;
         }
+        self.display.refresh()?;
 
         Ok(())
     }
@@ -296,6 +289,7 @@ impl Editor {
             let cur_line = &mut self.display.lines[cur_row];
             buf::push_ref(cur_line, next_line.iter());        
         }
+        self.display.refresh()?;
 
         Ok(())
     }
@@ -313,5 +307,6 @@ impl Editor {
 
         Ok(())
     }
+    
 }
 
