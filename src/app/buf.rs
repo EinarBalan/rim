@@ -11,6 +11,7 @@ pub fn from_string(str: &str) -> GapBuffer<GapBuffer<char>> {
         }
         res.push_back(buf);
     }
+    res.push_back(GapBuffer::new());
     res
 }
 
