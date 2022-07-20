@@ -18,7 +18,7 @@ pub fn run(config: &Config) -> Result<()> {
 
     // read contents from file or create new buffer
     let content = fs::read_to_string(&config.file_name)
-        .unwrap_or(String::from(""));
+        .unwrap_or_else(|_| String::from(""));
 
     // initialize display with content from file
     let mut display = Display::new(stdout, &content, config);

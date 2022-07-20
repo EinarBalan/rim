@@ -52,30 +52,29 @@ impl Editor {
         let result = match event {
             // standard controls (no modifiers applied)
             KeyEvent { modifiers: KeyModifiers::NONE, code } => {
-                match code {
-                    KeyCode::Left => self.move_cursor(Direction::Left),
-                    KeyCode::Right => self.move_cursor(Direction::Right),
-                    KeyCode::Up => self.move_cursor(Direction::Up),
-                    KeyCode::Down => self.move_cursor(Direction::Down),
+                let res = match code {
+                    KeyCode::Up => self.move_display(Direction::Up),
+                    KeyCode::Down => self.move_display(Direction::Down),
+                    KeyCode::Left => self.move_display(Direction::Left),
+                    KeyCode::Right => self.move_display(Direction::Right),
                     KeyCode::Enter => {
-                        self.split_line()?;
-                        self.display.refresh()
+                        self.split_line()
                     }
                     KeyCode::Backspace => {
-                        self.delete(1)?;
-                        self.display.refresh()
+                        self.delete(1)
                     }
                     KeyCode::Char(c) => {
                         let string = String::from(c);
-                        self.insert(&string)?;
-                        self.display.refresh()
+                        self.insert(&string)
                     }
                     KeyCode::Tab => {
-                        self.insert("    ")?;
-                        self.display.refresh()
+                        self.insert("    ")
                     }
                     _ => Ok(()),
-                }
+                };
+                self.display.refresh()?;
+
+                res
             }
 
             // CTRL modifer
@@ -122,15 +121,16 @@ impl Editor {
     /// Move cursor y rows and x columns if possible.
     /// Will not move if outside the bounds of the text.
     fn move_cursor(&mut self, dir: Direction) -> Result<()> {
+        let (_cur_col, mut cur_row) = self.display.cursor_pos_diplaced()?.clone();
+        let (mut col, mut row) = display::cursor_pos_usize()?; 
+        
         let lines = &mut self.display.lines;
         let stdout = &mut self.display.stdout;
 
-        let (mut col, mut row) = display::cursor_pos_usize()?;
-
         if let Some(line) = lines.get(row) {
             match dir {
-                Direction::Up => if row != 0 { row -= 1; },
-                Direction::Down => row += 1,
+                Direction::Up => if row != 0 { cur_row -= 1; row -= 1; },
+                Direction::Down => {cur_row += 1; row += 1},
                 Direction::Left => if col != 0 { col -= 1; },
                 Direction::Right => col += 1,
                 Direction::Start => col = 0,
@@ -144,7 +144,7 @@ impl Editor {
             }
 
             // force column to always be in bounds
-            let num_cols = lines[row as usize].len();
+            let num_cols = lines[cur_row as usize].len();
             col = cmp::min(col, num_cols);
 
             queue!(stdout, cursor::MoveTo(col as u16, row as u16))?;
@@ -153,9 +153,21 @@ impl Editor {
         Ok(())
     }
 
+    fn move_display(&mut self, dir: Direction) -> Result<()> {
+        match dir {
+            Direction::Up => self.display.move_up(),
+            Direction::Down => self.display.move_down(),
+            Direction::Left => self.display.move_left(),
+            // Direction::Right => self.display.move_right(),
+            _ => return Ok(())
+        }
+
+        Ok(())        
+    }
+
     /// Delete character at left directed offset from cursor on current row if possible
     fn delete(&mut self, offset: i32) -> Result<()> {
-        let (cur_col, cur_row) = display::cursor_pos_usize()?;
+        let (cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
         let pos = cur_col as i32 - offset;
         if pos < 0 && offset != 0 {
@@ -180,7 +192,7 @@ impl Editor {
 
     /// Delete character starting at cursor until end of line
     fn kill(&mut self) -> Result<()> {
-        let (cur_col, cur_row) = display::cursor_pos_usize()?;
+        let (cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
         let cur_line = &mut self.display.lines[cur_row];
 
@@ -214,7 +226,8 @@ impl Editor {
 
     /// Insert string at cursor
     fn insert(&mut self, string: &str) -> Result<()> {
-        let (cur_col, cur_row) = display::cursor_pos_usize()?;
+        let (cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
+
         let cur_line = &mut self.display.lines[cur_row];
 
         if cur_col < cur_line.len() {
@@ -231,7 +244,7 @@ impl Editor {
 
     /// Split current line into two at cursor
     fn split_line(&mut self) -> Result<()> {
-        let (cur_col, cur_row) = display::cursor_pos_usize()?;
+        let (cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
         let cur_line = &mut self.display.lines[cur_row];
         let new_line = cur_line.drain(cur_col..).collect();
@@ -245,7 +258,7 @@ impl Editor {
 
     /// Merge current line with line above
     fn splice_up(&mut self) -> Result<()> {
-        let (_cur_col, cur_row) = display::cursor_pos_usize()?;
+        let (_cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
         let num_rows = self.display.lines.len();
 
@@ -272,7 +285,7 @@ impl Editor {
 
     /// Merge current line with line below
     fn splice_down(&mut self) -> Result<()> {
-        let (_cur_col, cur_row) = display::cursor_pos_usize()?;
+        let (_cur_col, cur_row) = self.display.cursor_pos_diplaced()?;
 
         let num_rows = self.display.lines.len();
 

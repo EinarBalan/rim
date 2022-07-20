@@ -1,5 +1,6 @@
 use std::{
     io::{Stdout, Write}, 
+    cmp,
 };
 
 use crossterm::{
@@ -24,6 +25,8 @@ use super::{
 pub struct Display  {
     pub stdout: Stdout,
     pub lines: GapBuffer<GapBuffer<char>>,
+    pub first_row: usize,
+    pub first_col: usize,
     pub file_name: String,
 }
 
@@ -31,7 +34,12 @@ impl Display {
     pub fn new(stdout: Stdout, content: &str, config: &Config) -> Display {
         let lines = buf::from_string(content);
 
-        Display { stdout, lines, file_name: config.file_name.clone()}
+        Display { 
+            stdout, 
+            lines, 
+            first_row: 0,
+            first_col: 0,
+            file_name: config.file_name.clone()}
     }
     
     pub fn show(&mut self) -> Result<()> {
@@ -72,16 +80,28 @@ impl Display {
 
     /// prints all lines to stdout
     fn print_lines(&mut self) -> Result<()> {
-        let last = self.lines.len() - 1;
+        let num_lines = self.lines.len();
+        let (_cols, rows) = terminal_usize()?;
+        
+        let last = num_lines - 1;
         let last_line = &self.lines[last];
         if !last_line.is_empty() {
             self.lines.push_back(GapBuffer::new());
         }
 
-        for line in &self.lines {
+        let last = cmp::min(num_lines, rows);
+        let screen_lines = self.lines.range(self.first_row..(self.first_row + last));
+
+        for line in &screen_lines {
+            // hanlde lines shorter than first col
+            let mut range = String::new();
+            let (num_cols, first_col) = (line.len() as i32, self.first_col as i32);
+            if num_cols - first_col > 0 { 
+                range = line.range(self.first_col..).iter().collect(); 
+            } 
             queue!(
                 self.stdout,
-                Print(buf::to_string(line)),
+                Print(range),
                 cursor::MoveToNextLine(1),
             )?;
         }
@@ -89,6 +109,39 @@ impl Display {
 
         Ok(())
     }
+
+    pub fn move_down(&mut self) {
+        let num_lines = self.lines.len();
+        let (_cols, rows) = terminal_usize().unwrap();
+        if self.first_row < (num_lines - rows - 1) {
+            self.first_row += 1;
+        }
+    }
+
+    pub fn move_up(&mut self) {
+        if self.first_row > 0 {
+            self.first_row -= 1;
+        }
+    }
+
+    pub fn move_left(&mut self) {
+        if self.first_col > 0 {
+            self.first_col -= 1;
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn move_right(&mut self) {
+        self.first_col += 1;
+    }
+
+    pub fn cursor_pos_diplaced(&self) -> Result<(usize, usize)> {
+        let (cur_col, cur_row) = cursor_pos_usize()?;
+        let pos = (cur_col + self.first_col, cur_row + self.first_row);
+    
+        Ok(pos)
+    }
+    
 }
 
 /// return terminal to normal state on drop
@@ -99,14 +152,15 @@ impl Drop for Display {
     }
 }
 
-/// Returns the cursor position (col, row) as usize
+/// Returns the cursor position in GapBuffer (col, row) as usize
 pub fn cursor_pos_usize() -> Result<(usize, usize)> {
     let (x, y) = cursor::position()?;
+    let pos = (x as usize, y as usize);
 
-    Ok((x as usize, y as usize))
+    Ok(pos)
 }
 
-#[allow(dead_code)]
+
 /// Returns the terminal size (columns, rows) as usize
 pub fn terminal_usize() -> Result<(usize, usize)> {
     let (col, row) = terminal::size()?;

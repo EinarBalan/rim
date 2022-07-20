@@ -29,12 +29,14 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
-- fix cursor move issue on delete non empty last line
-- Show '-' if text is cut off horizontally
 - Page down/up & left/right
+   * auto scroll when cursor nears border of terminal
+- fix flicker 
+- on resize, refresh
 - Message/command bar
 - Find and replace 
 - Controls help message
 - Open scratch buffer using `rim`
 - Exit without saving message
 - Undo/redo
+
