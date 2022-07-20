@@ -252,7 +252,7 @@ impl Editor {
         if cur_row < num_rows - 1 {   
             let cur_line = self.display.lines[cur_row].clone();
 
-            if cur_line.is_empty(){
+            if cur_line.is_empty() {
                 self.display.lines.remove(cur_row);
             } else if cur_row > 0 {
                 self.move_cursor(Direction::Up)?;

@@ -55,18 +55,29 @@ impl Display {
             self.stdout, 
             cursor::SavePosition,
             cursor::MoveTo(0, 0),
+            cursor::Hide,
             Clear(ClearType::All),
         )?;
 
         self.print_lines()?;
 
-        execute!(self.stdout, cursor::RestorePosition)?;
+        execute!(
+            self.stdout, 
+            cursor::RestorePosition, 
+            cursor::Show
+        )?;
 
         Ok(())
     }
 
     /// prints all lines to stdout
     fn print_lines(&mut self) -> Result<()> {
+        let last = self.lines.len() - 1;
+        let last_line = &self.lines[last];
+        if !last_line.is_empty() {
+            self.lines.push_back(GapBuffer::new());
+        }
+
         for line in &self.lines {
             queue!(
                 self.stdout,
