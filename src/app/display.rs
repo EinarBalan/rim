@@ -91,17 +91,16 @@ impl Display {
 
         let (_, cur_term_row) = cursor::position()?;
         let (_cur_col, cur_row) = self.cursor_pos_diplaced()?;
-        let cur_line = &self.lines[cur_row];
-
-        execute!(
-            self.stdout, 
-            cursor::SavePosition,
-            cursor::MoveTo(0, cur_term_row),
-            Clear(ClearType::CurrentLine),
-            Print(buf::to_string(cur_line)),
-            cursor::RestorePosition,
-        )?;
-
+        if let Some(cur_line) = &self.lines.get(cur_row) {
+            execute!(
+                self.stdout, 
+                cursor::SavePosition,
+                cursor::MoveTo(0, cur_term_row),
+                Clear(ClearType::CurrentLine),
+                Print(buf::to_string(cur_line)),
+                cursor::RestorePosition,
+            )?;
+        }
         Ok(())
     }
 
