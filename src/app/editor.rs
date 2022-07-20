@@ -5,8 +5,10 @@ use crossterm::{
 };
 use std::{cmp, fs, io::Write, time::Duration};
 
-use super::display::{self, Display};
-
+use super::{
+    display::{self, Display},
+    buf,
+};
 enum Direction {
     Up,
     Down,
@@ -180,7 +182,7 @@ impl Editor {
     fn kill(&mut self) -> Result<()> {
         let (cur_col, cur_row) = display::cursor_pos_usize()?;
 
-        let cur_line = self.display.lines[cur_row].clone();
+        let cur_line = &mut self.display.lines[cur_row];
 
         if cur_col == 0 && cur_line.is_empty() {
             self.splice_up()?;
@@ -189,10 +191,10 @@ impl Editor {
 
         if cur_col < cur_line.len() {
             // kill to end and copy
-            let new_line = cur_line.chars().take(cur_col).collect();
-            let killed = cur_line.chars().skip(cur_col).collect();
+            // let new_line = cur_line.iter().take(cur_col).collect();
+            // let killed = cur_line.iter().skip(cur_col).collect();
+            let killed = cur_line.drain(cur_col..).collect();
             self.copied = Some(vec![killed]);
-            self.display.lines[cur_row] = new_line;
         } else {
             self.splice_down()?;
         }
@@ -218,9 +220,9 @@ impl Editor {
         let cur_line = &mut self.display.lines[cur_row];
 
         if cur_col < cur_line.len() {
-            cur_line.insert_str(cur_col, string);
+            cur_line.insert_many(cur_col, string.chars());
         } else {
-            cur_line.push_str(string);
+            buf::push_owned(cur_line, string.chars());
         }
         for _ in 0..string.len() {
             self.move_cursor(Direction::Right)?;
@@ -233,16 +235,17 @@ impl Editor {
     fn split_line(&mut self) -> Result<()> {
         let (cur_col, cur_row) = display::cursor_pos_usize()?;
 
-        let cur_line = self.display.lines[cur_row].clone();
-        let first = cur_line.chars().take(cur_col).collect();
-        let second = cur_line.chars().skip(cur_col).collect();
+        let cur_line = &mut self.display.lines[cur_row];
+        let new_line = cur_line.drain(cur_col..).collect();
+        // let first = cur_line.iter().take(cur_col).collect();
+        // let second = cur_line.iter().skip(cur_col).collect();
 
-        self.display.lines[cur_row] = first;
+        // self.display.lines[cur_row] = cur_line;
 
         if cur_row < self.display.lines.len() {
-            self.display.lines.insert(cur_row + 1, second);
+            self.display.lines.insert(cur_row + 1, new_line);
         } else {
-            self.display.lines.push(second);
+            self.display.lines.push_back(new_line);
         }
         self.move_cursor(Direction::Down)?;
         self.move_cursor(Direction::Start)?;
@@ -269,7 +272,7 @@ impl Editor {
                 self.display.lines.remove(cur_row);
     
                 let prev_line = &mut self.display.lines[cur_row - 1];
-                prev_line.push_str(&cur_line);
+                buf::push_ref(prev_line, cur_line.iter());
             } 
         } else {
             self.move_cursor(Direction::Up)?;
@@ -289,7 +292,7 @@ impl Editor {
             self.display.lines.remove(cur_row + 1);
 
             let cur_line = &mut self.display.lines[cur_row];
-            cur_line.push_str(&next_line);        
+            buf::push_ref(cur_line, next_line.iter());        
         }
 
         Ok(())
@@ -297,11 +300,11 @@ impl Editor {
 
     /// Save edits to current file
     fn save(&mut self) -> Result<()> {
-        let lines = &mut self.display.lines;
-        let file_name = &mut self.display.file_name;
+        let lines = &self.display.lines;
+        let file_name = &mut self.display.file_name.clone();
         let mut content = String::new();
         for line in lines {
-            content.push_str(&format!("{}\n", line)[..]);
+            content.push_str(&format!("{}\n", buf::to_string(line))[..]);
         }
 
         fs::write(file_name, content)?;

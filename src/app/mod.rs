@@ -1,7 +1,7 @@
 pub mod config;
 mod editor;
 mod display;
-pub mod vector;
+pub mod buf;
 
 use config::Config;
 use editor::Editor;

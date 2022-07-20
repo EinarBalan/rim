@@ -14,22 +14,22 @@ use crossterm::{
     style::*,
     Result,
 };
+use gapbuf::GapBuffer;
 
 use super::{
-    vector, 
+    buf, 
     config::Config,
 };
 
 pub struct Display  {
     pub stdout: Stdout,
-    pub lines: Vec<String>,
+    pub lines: GapBuffer<GapBuffer<char>>,
     pub file_name: String,
 }
 
 impl Display {
     pub fn new(stdout: Stdout, content: &str, config: &Config) -> Display {
-        let lines = content.lines().collect();
-        let lines = vector::from(lines);
+        let lines = buf::from_string(content);
 
         Display { stdout, lines, file_name: config.file_name.clone()}
     }
@@ -70,7 +70,7 @@ impl Display {
         for line in &self.lines {
             queue!(
                 self.stdout,
-                Print(line),
+                Print(buf::to_string(line)),
                 cursor::MoveToNextLine(1),
             )?;
         }

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.24"
+gapbuf = "0.1.3"
