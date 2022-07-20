@@ -1,5 +1,5 @@
-# ri
-`ri` is a simple text editor similar to `nano` that is implemented in Rust.
+# rim
+`rim` is a simple text editor similar to `nano` that is implemented in Rust.
 
 ## Set up 
 1. Clone the repo to your directory of choice and ensure that you have Rust installed
