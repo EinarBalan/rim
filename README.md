@@ -29,17 +29,14 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
-- Page down/up & left/right
-   * auto scroll when cursor nears border of terminal
-- change refresh to refresh to end of file (starting from previous line)
-- fix slow paste sometimes (move from iterative to jump)
+- Auto scroll when cursor nears border of terminal
+- Change refresh to refresh to end of file (starting from previous line)
+   * to limit flicker
 - Message/command bar
 - Find and replace 
 - Controls help message
 - Open scratch buffer using `rim`
 - Exit without saving message
 - Undo/redo
-
-
-
-
+- Ctrl-l to center cursor if possible
+- Fix slow paste on some terminals (move from iterative to jump)

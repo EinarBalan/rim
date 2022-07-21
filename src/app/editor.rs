@@ -9,6 +9,9 @@ use super::{
     display::{self, Display},
     buf,
 };
+
+const TIMEOUT: u64 = 1000;
+
 enum Direction {
     Up,
     Down,
@@ -31,7 +34,7 @@ impl Editor {
     pub fn event_loop(&mut self) -> Result<()> {
         loop {
             // listen for key
-            if poll(Duration::from_millis(1000))? {
+            if poll(Duration::from_millis(TIMEOUT))? {
                 match read()? {
                     Event::Key(key_event) => {
                         // exit program on escape or Ctrl-X
@@ -112,14 +115,18 @@ impl Editor {
         let lines = &mut self.display.lines;
         let stdout = &mut self.display.stdout;
 
-        if let Some(line) = lines.get(row) {
+        if let Some(_) = lines.get(row) {
             match dir {
                 Direction::Up => if row != 0 { cur_row -= 1; row -= 1; },
                 Direction::Down => {cur_row += 1; row += 1},
                 Direction::Left => if col != 0 { col -= 1; },
                 Direction::Right => col += 1,
                 Direction::Start => col = 0,
-                Direction::End => col = line.len(),
+                Direction::End => {
+                    if let Some(cur_line) = lines.get(cur_row) {
+                        col = cur_line.len();
+                    }
+                },
             }
 
             // don't move to new row if it is outside bounds
@@ -129,7 +136,6 @@ impl Editor {
             }
 
             // force column to always be in bounds
-            fs::write("test", format!("{}", cur_row))?;
             let mut num_cols = col;
             if let Some(line) = lines.get(cur_row as usize) {
                 num_cols = line.len();
