@@ -5,7 +5,7 @@ use crossterm::{
 };
 use std::{cmp, fs, io::Write, time::Duration};
 use super::{
-    display::{self, Display},
+    display::{self, Display, cursor_pos_usize, terminal_usize},
     buf,
 };
 
@@ -79,10 +79,25 @@ impl Editor {
             // CTRL modifer
             KeyEvent { modifiers: KeyModifiers::CONTROL, code } => {
                 match code {
+                    KeyCode::Char('p') => {
+                        let (_cur_col, cur_row) = cursor_pos_usize()?;
+
+                        // move display or move cursor
+                        if cur_row == 0 { self.move_display(Direction::Up)?; } 
+                        else { self.move_cursor(Direction::Up)?; }
+                        Ok(())
+                    },
+                    KeyCode::Char('n') => {
+                        let (_cur_col, cur_row) = cursor_pos_usize()?;
+                        let (_cols, rows) = terminal_usize()?;
+
+                        // move display or move cursor
+                        if cur_row + 1 == rows { self.move_display(Direction::Down)?; }
+                        else { self.move_cursor(Direction::Down)?; }
+                        Ok(())
+                    },
                     KeyCode::Char('b') => self.move_cursor(Direction::Left),
                     KeyCode::Char('f') => self.move_cursor(Direction::Right),
-                    KeyCode::Char('p') => self.move_cursor(Direction::Up),
-                    KeyCode::Char('n') => self.move_cursor(Direction::Down),
                     KeyCode::Char('a') => self.move_cursor(Direction::Start),
                     KeyCode::Char('e') => self.move_cursor(Direction::End),
                     KeyCode::Char('d') => self.delete(0),

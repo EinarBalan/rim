@@ -29,7 +29,7 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
-- Auto scroll when cursor nears border of terminal
+- add auto horizontal scrolling
 - Change refresh to refresh to end of file (starting from previous line)
    * to limit flicker
 - Delete to beginning from cursor
@@ -42,4 +42,5 @@ $ ./target/release/rim [FILE_NAME]
 - Undo/redo
 - Ctrl-l to center cursor if possible
 - Fix slow paste on some terminals (move from iterative to jump)
+
 
