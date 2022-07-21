@@ -4,7 +4,6 @@ use crossterm::{
     queue, Result,
 };
 use std::{cmp, fs, io::Write, time::Duration};
-
 use super::{
     display::{self, Display},
     buf,

@@ -1,13 +1,12 @@
 pub mod config;
+pub mod buf;
 mod editor;
 mod display;
-pub mod buf;
 
 use config::Config;
 use editor::Editor;
 use crossterm::Result;
 use display::Display;
-
 use std::{
     io::stdout,
     fs,

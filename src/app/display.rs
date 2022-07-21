@@ -2,7 +2,6 @@ use std::{
     io::{Stdout, Write}, 
     cmp, 
 };
-
 use crossterm::{
     execute, queue,
     terminal::{
@@ -16,7 +15,6 @@ use crossterm::{
     Result,
 };
 use gapbuf::GapBuffer;
-
 use super::{
     buf, 
     config::Config,

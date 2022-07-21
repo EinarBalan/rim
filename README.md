@@ -32,6 +32,8 @@ $ ./target/release/rim [FILE_NAME]
 - Auto scroll when cursor nears border of terminal
 - Change refresh to refresh to end of file (starting from previous line)
    * to limit flicker
+- Delete to beginning from cursor
+- Jump to beginning/end
 - Message/command bar
 - Find and replace 
 - Controls help message
@@ -40,3 +42,4 @@ $ ./target/release/rim [FILE_NAME]
 - Undo/redo
 - Ctrl-l to center cursor if possible
 - Fix slow paste on some terminals (move from iterative to jump)
+
