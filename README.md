@@ -29,18 +29,18 @@ $ ./target/release/rim [FILE_NAME]
 | Exit                    | Ctrl     | x          |
 
 ## To be implemented
-- add auto horizontal scrolling
-- Change refresh to refresh to end of file (starting from previous line)
-   * to limit flicker
+- Undo/redo
+- Find and replace 
+- Add auto horizontal scrolling
 - Delete to beginning from cursor
 - Jump to beginning/end
 - Message/command bar
-- Find and replace 
 - Controls help message
 - Open scratch buffer using `rim`
 - Exit without saving message
-- Undo/redo
 - Ctrl-l to center cursor if possible
-- Fix slow paste on some terminals (move from iterative to jump)
 
+## Issues
+- Change refresh to refresh to end of file (starting from previous line) to limit flicker
+- Fix slow paste on some terminals (move from iterative to jump)
 
